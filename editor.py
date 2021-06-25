@@ -8,13 +8,14 @@ from scripts.input import Input
 
 class Editor:
     def __init__(self):
-        self.chunks = Chonky(self)
-        self.input = Input()
-        self.sheets = Sheets(self)
         self.window = Window(self)
+        self.chunks = Chonky(self)
+        self.input = Input(self)
+        self.sheets = Sheets(self)
 
     def update(self):
         self.input.update()
+        self.chunks.update()
         self.window.update()
 
     def run(self):

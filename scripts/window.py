@@ -1,7 +1,7 @@
 import pygame
 from .camera import Camera
 from .toolbar import Toolbar
-from .font import Font
+from .gui import GUI
 
 WINDOWSIZE = 1500, 800
 
@@ -10,19 +10,25 @@ class Window:
         # init the module
         pygame.init()
 
+        self.editor = editor
+
         # create the editor window
         self.window = pygame.display.set_mode(WINDOWSIZE, flags=pygame.SCALED | pygame.RESIZABLE)
 
+        # scale for pixel art aesthetic
+        self.scale = 2
+
         # initialize the toolbar, camera, and font system
         self.toolbar = Toolbar(self)
-        self.camera = Camera(self)
-        self.font = Font(scale = 2)
-
+        self.camera = Camera(self, self.scale)
+        self.gui = GUI(self, self.scale)
 
     def update(self):
         self.window.fill((0, 0, 0))
-        
+
         self.toolbar.render()
         self.camera.render()
+        self.editor.chunks.render()
+        self.gui.render(self.editor.input)
 
         pygame.display.flip()

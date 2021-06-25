@@ -6,6 +6,7 @@ class Toolbar:
         self.window = window
 
         self.display = pygame.Surface((self.window.window.get_width() * .2, self.window.window.get_height()))
+        self.width = self.display.get_width()
 
         self.divider = pygame.Rect(self.display.get_width() * .05, self.display.get_height() * .2, self.display.get_width() * .9, 2)
 

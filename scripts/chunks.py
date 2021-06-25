@@ -4,8 +4,14 @@ import pygame
 class Chonky:
     def __init__(self, editor):
         self.layer = 0
+        self.tileSize = 16
         self.tiles = []
 
+    def update(self):
+        return
+
+    def render(self):
+        pass
 
     def getVisibleChunks(self):
         return
