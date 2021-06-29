@@ -20,8 +20,8 @@ class Window:
 
         # initialize the toolbar, camera, and font system
         self.toolbar = Toolbar(self)
-        self.camera = Camera(self, self.scale)
-        self.gui = GUI(self, self.scale)
+        self.camera = Camera(self)
+        self.gui = GUI(self)
 
     def update(self):
         self.window.fill((0, 0, 0))

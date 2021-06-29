@@ -2,9 +2,9 @@ import pygame
 
 
 class Camera:
-    def __init__(self, window, scale):
+    def __init__(self, window):
         self.window = window
-        self.scale = scale
+        self.scale = self.window.scale
         self.color = 53, 79, 82
 
         self.originCross = 16 * self.scale
