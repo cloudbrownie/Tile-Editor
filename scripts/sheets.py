@@ -57,7 +57,7 @@ class Sheets:
 
             # create asset rects
             assetRects = []
-            assetRectY = self.toolbar.dividerPad.bottom + self.YSPACE
+            assetRectY = self.toolbar.dividerPad.h // 2 + self.YSPACE
             for row in assets:
                 assetRectX = self.XSPACE
                 assetRow = []

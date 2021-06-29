@@ -30,6 +30,8 @@ class Toolbar:
 
         self.currentSheet = None
         self.sheetLock = None
+        self.currentTile = None
+        self.tileLock = None
         self.NAMESPEED = 10
         self.MAXNAMEOFFSET = 20
         self.lockOffset = -20
@@ -76,11 +78,47 @@ class Toolbar:
     def renderTiles(self):
         self.tilerenderSurf.fill(self.COLOR)
 
+        if self.sheetLock:
+            for i, row in enumerate(self.sheets.sheets[self.sheetLock][0]):
+                for j, tile in enumerate(row):
+                    if tile == self.currentTile or tile == self.tileLock:
+                        whiteMask = pygame.mask.from_surface(tile).to_surface(unsetcolor=(0, 0, 0, 0))
+                        for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+                            self.tilerenderSurf.blit(whiteMask, (self.sheets.sheets[self.sheetLock][2][i][j].x + x, self.sheets.sheets[self.sheetLock][2][i][j].y + y))
+                    self.tilerenderSurf.blit(tile, self.sheets.sheets[self.sheetLock][2][i][j])
+
+        self.display.blit(self.tilerenderSurf, (0, self.display.get_height() * .2))
+
+    def updateTileRects(self):
+        if self.sheetLock:
+            for i, row in enumerate(self.sheets.sheets[self.sheetLock][0]):
+                for j, tile in enumerate(row):
+                    pass
+
+
+    def adjustTileScroll(self, direction):
+        pass
+
+    def selectTile(self, cursor, lock=False):
+        zerodCursor = cursor.copy()
+        zerodCursor.y -= self.display.get_height() * .2
+
+        if self.sheetLock:
+            self.currentTile = None
+            for i, row in enumerate(self.sheets.sheets[self.sheetLock][0]):
+                for j, tile in enumerate(row):
+                    if self.sheets.sheets[self.sheetLock][2][i][j].colliderect(zerodCursor):
+                        self.currentTile = tile
+                        if lock and self.tileLock != tile:
+                            self.tileLock = tile
+
     def render(self):
         self.display.fill(self.COLOR)
 
         self.updateSheetRects()
         self.renderSheetNames()
+
+        self.renderTiles()
 
         pygame.draw.rect(self.display, self.COLOR, self.dividerPad)
         pygame.draw.rect(self.display, (202, 210, 197), self.divider)
