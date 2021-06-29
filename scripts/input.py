@@ -8,6 +8,8 @@ class Input:
         self.mouseposition = 0, 0
         self.tileSize = self.editor.chunks.tileSize
 
+        self.cursor = pygame.Rect(0, 0, 5, 5)
+
     @property
     def penPosition(self):
         mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
@@ -17,6 +19,7 @@ class Input:
     def update(self):
         # get the mouse position
         self.mouseposition = pygame.mouse.get_pos()
+        self.cursor.center = self.mouseposition
 
         # handle inputs
         for event in pygame.event.get():
@@ -25,16 +28,23 @@ class Input:
                 sys.exit()
 
             elif event.type == pygame.MOUSEWHEEL:
-                self.editor.window.camera.adjustZoom(-event.y)
+                if self.mouseposition[0] > self.editor.window.toolbar.width:
+                    self.editor.window.camera.adjustZoom(-event.y)
+                elif self.mouseposition[0] < self.editor.window.toolbar.width:
+                    self.editor.window.toolbar.adjustNameScroll(-event.y * 2)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 2:
+                if event.button == 1:
+                    self.editor.window.toolbar.selectSheet(self.cursor, lock=True)
+                elif event.button == 2:
                     self.editor.window.camera.setScrollBoolean(True)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 2:
                     self.editor.window.camera.setScrollBoolean(False)
 
+        # update the selected sheet name
+        self.editor.window.toolbar.selectSheet(self.cursor)
 
         # update the camera scroll in here since it only updates based on inputs anyways
         self.editor.window.camera.updateScroll()
