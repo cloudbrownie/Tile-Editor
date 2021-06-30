@@ -12,12 +12,13 @@ class Toolbar:
         self.display = pygame.Surface((self.window.window.get_width() * .2, self.window.window.get_height()))
         self.width = self.display.get_width()
 
-        self.sheetnameSurf = pygame.Surface((self.width, self.display.get_height() * .2))
-        self.tilerenderSurf = pygame.Surface((self.width, self.display.get_height() * .8))
-
         self.divider = pygame.Rect(self.display.get_width() * .05, self.display.get_height() * .2, self.display.get_width() * .9, 2)
         padHeight = self.display.get_height() * .05
         self.dividerPad = pygame.Rect(0, self.divider.top - padHeight // 2, self.width, padHeight)
+
+        self.sheetnameSurf = pygame.Surface((self.width, self.display.get_height() * .2))
+        self.tilerenderSurf = pygame.Surface((self.width // 2, self.display.get_height() * .8 // 2))
+        self.tileSurfRatio = self.tilerenderSurf.get_width() / self.display.get_width(), self.tilerenderSurf.get_height() / (self.display.get_height() * .8)
 
         self.COLOR = 47, 62, 70
 
@@ -74,6 +75,7 @@ class Toolbar:
                 if lock and self.sheetLock != sheetname:
                     self.lockOffset = -20
                     self.sheetLock = self.currentSheet
+                    self.tileLock = None
 
     def renderTiles(self):
         self.tilerenderSurf.fill(self.COLOR)
@@ -83,11 +85,11 @@ class Toolbar:
                 for j, tile in enumerate(row):
                     if tile == self.currentTile or tile == self.tileLock:
                         whiteMask = pygame.mask.from_surface(tile).to_surface(unsetcolor=(0, 0, 0, 0))
-                        for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+                        for x, y in [(1, 1), (-1, 1), (1, -1), (-1, -1), (1, 0), (-1, 0), (0, 1), (0, -1)]:
                             self.tilerenderSurf.blit(whiteMask, (self.sheets.sheets[self.sheetLock][2][i][j].x + x, self.sheets.sheets[self.sheetLock][2][i][j].y + y))
                     self.tilerenderSurf.blit(tile, self.sheets.sheets[self.sheetLock][2][i][j])
 
-        self.display.blit(self.tilerenderSurf, (0, self.display.get_height() * .2))
+        self.display.blit(pygame.transform.scale(self.tilerenderSurf, (self.width, int(self.display.get_height() * .8))), (0, self.display.get_height() * .2))
 
     def updateTileRects(self):
         if self.sheetLock:
@@ -100,14 +102,15 @@ class Toolbar:
         pass
 
     def selectTile(self, cursor, lock=False):
-        zerodCursor = cursor.copy()
-        zerodCursor.y -= self.display.get_height() * .2
+        zeroMousePos = list(cursor)
+        zeroMousePos[1] -= self.divider.centery
+        zeroMousePos = zeroMousePos[0] * self.tileSurfRatio[0], zeroMousePos[1] * self.tileSurfRatio[1]
 
         if self.sheetLock:
             self.currentTile = None
             for i, row in enumerate(self.sheets.sheets[self.sheetLock][0]):
                 for j, tile in enumerate(row):
-                    if self.sheets.sheets[self.sheetLock][2][i][j].colliderect(zerodCursor):
+                    if self.sheets.sheets[self.sheetLock][2][i][j].collidepoint(zeroMousePos):
                         self.currentTile = tile
                         if lock and self.tileLock != tile:
                             self.tileLock = tile

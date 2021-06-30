@@ -17,7 +17,7 @@ class Sheets:
         }
 
         # constants for sheet name rendering in the toolbar and vars used for scrolling
-        self.YSPACE = 5
+        self.YSPACE = 7
         self.XSPACE = 5
         self.NAMESCROLLBOUND = 0
 
@@ -64,7 +64,7 @@ class Sheets:
                 for asset in row:
                     assetRow.append(pygame.Rect(assetRectX, assetRectY, asset.get_width(), asset.get_height()))
                     assetRectX += asset.get_width() + self.XSPACE
-                    if assetRectX > self.toolbar.width:
+                    if assetRectX > self.toolbar.tilerenderSurf.get_width():
                         assetRectX = asset.get_width() + self.XSPACE * 3
                         assetRectY += max([rect.height for rect in assetRow]) + self.YSPACE
                         assetRow[-1].x = self.XSPACE * 2

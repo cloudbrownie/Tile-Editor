@@ -38,7 +38,7 @@ class Input:
                     if self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] < self.editor.window.toolbar.divider.centery:
                         self.editor.window.toolbar.selectSheet(self.cursor, lock=True)
                     elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.divider.centery:
-                        self.editor.window.toolbar.selectTile(self.cursor, lock=True)
+                        self.editor.window.toolbar.selectTile(self.mouseposition, lock=True)
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(True)
@@ -52,7 +52,7 @@ class Input:
         self.editor.window.toolbar.selectSheet(self.cursor)
 
         # update the selected tile
-        self.editor.window.toolbar.selectTile(self.cursor)
+        self.editor.window.toolbar.selectTile(self.mouseposition)
 
         # stop scrolling if the mouse goes into the toolbar
         if self.mouseposition[0] < self.editor.window.toolbar.width:
