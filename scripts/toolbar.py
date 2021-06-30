@@ -34,6 +34,7 @@ class Toolbar:
         self.currentTile = None
         self.tileLock = None
         self.NAMESPEED = 10
+        self.NAMESCROLLSPEED = 20
         self.MAXNAMEOFFSET = 20
         self.lockOffset = -20
         self.currentSheetScroll = 0
@@ -64,7 +65,7 @@ class Toolbar:
 
     def adjustNameScroll(self, direction):
         current = self.currentSheetScroll
-        self.currentSheetScroll = max(0, self.currentSheetScroll + self.NAMESPEED * direction)
+        self.currentSheetScroll = max(0, self.currentSheetScroll + self.NAMESCROLLSPEED * direction)
         self.currentSheetScroll = min(self.sheets.NAMESCROLLBOUND, self.currentSheetScroll)
 
     def selectSheet(self, cursor, lock=False):
