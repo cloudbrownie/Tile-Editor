@@ -25,19 +25,27 @@ class Toolbar:
         self.sheets.loadSheets()
         self.nameOffsets = {}
         self.nameOrigins = {}
+        self.tileOrigins = {}
         for sheet in self.sheets.sheets:
             self.nameOffsets[sheet] = 0
             self.nameOrigins[sheet] = self.sheets.sheets[sheet][1].y
+            self.tileOrigins[sheet] = [[]]
+            for i, row in enumerate(self.sheets.sheets[sheet][2]):
+                self.tileOrigins[sheet].append([])
+                for j, tile in enumerate(row):
+                    self.tileOrigins[sheet][i].append(self.sheets.sheets[sheet][2][i][j].y)
 
         self.currentSheet = None
         self.sheetLock = None
         self.currentTile = None
         self.tileLock = None
         self.NAMESPEED = 10
-        self.NAMESCROLLSPEED = 20
+        self.NAMESCROLLSPEED = 40
+        self.TILESCROLLSPEED = 40
         self.MAXNAMEOFFSET = 20
         self.lockOffset = -20
         self.currentSheetScroll = 0
+        self.currentTileScroll = 0
 
     def renderSheetNames(self):
         self.sheetnameSurf.fill(self.COLOR)
@@ -64,7 +72,6 @@ class Toolbar:
         self.lockOffset = min(self.lockOffset + self.NAMESPEED * self.clock.dt // 2, 0)
 
     def adjustNameScroll(self, direction):
-        current = self.currentSheetScroll
         self.currentSheetScroll = max(0, self.currentSheetScroll + self.NAMESCROLLSPEED * direction)
         self.currentSheetScroll = min(self.sheets.NAMESCROLLBOUND, self.currentSheetScroll)
 
@@ -96,11 +103,11 @@ class Toolbar:
         if self.sheetLock:
             for i, row in enumerate(self.sheets.sheets[self.sheetLock][0]):
                 for j, tile in enumerate(row):
-                    pass
-
+                    self.sheets.sheets[self.sheetLock][2][i][j].y -= (self.sheets.sheets[self.sheetLock][2][i][j].y - (self.tileOrigins[self.sheetLock][i][j] - self.currentTileScroll)) * self.clock.dt // 2
 
     def adjustTileScroll(self, direction):
-        pass
+        self.currentTileScroll = max(0, self.currentTileScroll + self.TILESCROLLSPEED * direction)
+        self.currentTileScroll = min(self.sheets.sheets[self.sheetLock][-1], self.currentTileScroll)
 
     def selectTile(self, cursor, lock=False):
         zeroMousePos = list(cursor)
@@ -122,6 +129,7 @@ class Toolbar:
         self.updateSheetRects()
         self.renderSheetNames()
 
+        self.updateTileRects()
         self.renderTiles()
 
         pygame.draw.rect(self.display, self.COLOR, self.dividerPad)

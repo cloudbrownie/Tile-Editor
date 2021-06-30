@@ -14,6 +14,7 @@ class Window:
 
         # create the editor window
         self.window = pygame.display.set_mode(WINDOWSIZE, flags=pygame.SCALED | pygame.RESIZABLE)
+        pygame.display.set_caption('Tile Editor')
 
         # scale for pixel art aesthetic
         self.scale = 2

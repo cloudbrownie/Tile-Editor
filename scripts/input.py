@@ -30,8 +30,10 @@ class Input:
             elif event.type == pygame.MOUSEWHEEL:
                 if self.mouseposition[0] > self.editor.window.toolbar.width:
                     self.editor.window.camera.adjustZoom(-event.y)
-                elif self.mouseposition[0] < self.editor.window.toolbar.width:
-                    self.editor.window.toolbar.adjustNameScroll(-event.y * 2)
+                elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] < self.editor.window.toolbar.dividerPad.centery:
+                    self.editor.window.toolbar.adjustNameScroll(-event.y)
+                elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.dividerPad.centery:
+                    self.editor.window.toolbar.adjustTileScroll(-event.y)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:

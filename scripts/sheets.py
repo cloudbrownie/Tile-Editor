@@ -57,7 +57,7 @@ class Sheets:
 
             # create asset rects
             assetRects = []
-            assetRectY = self.toolbar.dividerPad.h // 2 + self.YSPACE
+            assetRectY = self.toolbar.dividerPad.h // 4 + self.YSPACE
             for row in assets:
                 assetRectX = self.XSPACE
                 assetRow = []
@@ -71,11 +71,12 @@ class Sheets:
                         assetRow[-1].y = assetRectY
                 assetRectY += max([rect.height for rect in assetRow]) + self.YSPACE
                 assetRects.append(assetRow)
+            assetRectY += assetRects[-1][-1].h
 
-            scrollBound = max(0, assetRectY - self.toolbar.tilerenderSurf.get_height() - self.toolbar.dividerPad.bottom)
+            scrollBound = max(0, assetRectY - self.toolbar.tilerenderSurf.get_height() - self.toolbar.dividerPad.h // 2)
 
             # store data in the dict
-            self.sheets[sheetname] = [assets, rect, assetRects, scrollBound, 0]
+            self.sheets[sheetname] = [assets, rect, assetRects, scrollBound]
 
         if self.sheets != {}:
             self.NAMESCROLLBOUND = max(0, sheetnameY - self.toolbar.sheetnameSurf.get_height() + self.YSPACE + self.toolbar.dividerPad.h // 2)
