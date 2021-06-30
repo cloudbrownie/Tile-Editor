@@ -1,6 +1,8 @@
 import pygame
 import json
 import os
+import cProfile
+import pstats
 from scripts.chunks import Chonky
 from scripts.clock import Clock
 from scripts.sheets import Sheets
@@ -15,14 +17,30 @@ class Editor:
         self.input = Input(self)
 
     def update(self):
-        self.input.update()
         self.chunks.update()
         self.window.update()
+        self.input.update()
         self.clock.tick()
 
     def run(self):
+        self.running = True
+
         self.clock.start()
-        while True:
+        while self.running:
             self.update()
 
-Editor().run()
+    def stop(self):
+        self.running = False
+
+def main():
+    Editor().run()
+
+main()
+
+# profiling
+# with cProfile.Profile() as pr:
+#     main()
+
+# stats = pstats.Stats(pr)
+# stats.sort_stats(pstats.SortKey.TIME)
+# stats.print_stats()

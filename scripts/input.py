@@ -8,6 +8,8 @@ class Input:
         self.mouseposition = 0, 0
         self.tileSize = self.editor.chunks.tileSize
 
+        self.penTypes = ['exact', f'{self.editor.chunks.tileSize}x{self.editor.chunks.tileSize} grid', '']
+
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
     @property
@@ -25,7 +27,7 @@ class Input:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
+                self.editor.stop()
 
             elif event.type == pygame.MOUSEWHEEL:
                 if self.mouseposition[0] > self.editor.window.toolbar.width:
