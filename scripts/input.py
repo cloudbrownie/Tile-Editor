@@ -27,6 +27,10 @@ class Input:
         elif self.penPositionTypes[self.penPositionIndex] == 'grid':
             return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.tileSize, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.tileSize
 
+    @property
+    def penPositionInfo(self):
+        return f'{self.penPositionTypes[self.penPositionIndex]} {self.penPosition}'
+
     def update(self):
         # get the mouse position
         self.mouseposition = pygame.mouse.get_pos()

@@ -10,7 +10,7 @@ class GUI:
 
     def render(self, input):
         # making the render text
-        renderText = f'[-] or [+] Layer {input.currentLayer}\n[Q] {input.penPosition}'
+        renderText = f'[-] or [+] Layer {input.currentLayer}\n[Q] {input.penPositionInfo}'
 
         # render the text
         self.font.render(self.window.window, renderText, (self.window.window.get_width() * .2 + 2, 2))
