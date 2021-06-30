@@ -8,7 +8,7 @@ class Sheets:
         self.toolbar = toolbar
 
         # init an empty sheet dictionary that will store all sheets and their loaded textures
-        # example: {'name':[[2D asset list], namerect, [assetrects], maxassetscroll]
+        # example: {'name':[[2D asset list], namerect, [assetrects], maxassetscroll, [namerenders]]
         self.sheets = {
         }
 
@@ -24,7 +24,7 @@ class Sheets:
     def loadSheets(self):
 
         # load from all sheets in the input folder (any .pngs)
-        sheetnameY = self.YSPACE
+        sheetnameY = self.YSPACE * 2
         for sheetname in [file for file in os.listdir('input/') if file.endswith('.png')]:
 
             # load the sheet and textures
@@ -51,9 +51,17 @@ class Sheets:
                     assets.append(row)
 
             # create the sheet name rect
-            size = self.toolbar.font.size(sheetname)
+            size = self.toolbar.inactiveFont.size(sheetname)
             rect = pygame.Rect((self.XSPACE, sheetnameY), size)
             sheetnameY += size[1] + self.YSPACE
+
+            # create the name renders to store in a cache
+            inactiveRender = pygame.Surface(size)
+            self.toolbar.inactiveFont.render(inactiveRender, sheetname, (0, 0))
+            inactiveRender.set_colorkey((0, 0, 0))
+            activeRender = pygame.Surface(size)
+            self.toolbar.activeFont.render(activeRender, sheetname, (0, 0))
+            activeRender.set_colorkey((0, 0, 0))
 
             # create asset rects
             assetRects = []
@@ -76,7 +84,7 @@ class Sheets:
             scrollBound = max(0, assetRectY - self.toolbar.tilerenderSurf.get_height() - self.toolbar.dividerPad.h // 2)
 
             # store data in the dict
-            self.sheets[sheetname] = [assets, rect, assetRects, scrollBound]
+            self.sheets[sheetname] = [assets, rect, assetRects, scrollBound, [inactiveRender, activeRender]]
 
         if self.sheets != {}:
             self.NAMESCROLLBOUND = max(0, sheetnameY - self.toolbar.sheetnameSurf.get_height() + self.YSPACE + self.toolbar.dividerPad.h // 2)

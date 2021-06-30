@@ -8,7 +8,13 @@ class Input:
         self.mouseposition = 0, 0
         self.tileSize = self.editor.chunks.tileSize
 
-        self.penTypes = ['exact', f'{self.editor.chunks.tileSize}x{self.editor.chunks.tileSize} grid', '']
+        self.penPositionTypes = ['exact', 'grid']
+        self.penPositionIndex = 0
+
+        self.penToolTypes = ['draw', 'erase']
+        self.penToolIndex = 0
+
+        self.currentLayer = 0
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
@@ -16,7 +22,10 @@ class Input:
     def penPosition(self):
         mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
         my = self.mouseposition[1] * self.editor.window.camera.ratio[1]
-        return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.tileSize, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.tileSize
+        if self.penPositionTypes[self.penPositionIndex] == 'exact':
+            return mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0], my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]
+        elif self.penPositionTypes[self.penPositionIndex] == 'grid':
+            return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.tileSize, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.tileSize
 
     def update(self):
         # get the mouse position
@@ -51,6 +60,20 @@ class Input:
                 if event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(False)
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    self.penToolIndex = 0
+                elif event.key == pygame.K_2:
+                    self.penToolIndex = 1
+                elif event.key == pygame.K_q:
+                    self.penPositionIndex += 1
+                    if self.penPositionIndex >= len(self.penPositionTypes):
+                        self.penPositionIndex = 0
+                elif event.key == pygame.K_EQUALS:
+                    self.currentLayer += 1
+                elif event.key == pygame.K_MINUS:
+                    self.currentLayer -= 1
 
         # update the selected sheet name
         self.editor.window.toolbar.selectSheet(self.cursor)

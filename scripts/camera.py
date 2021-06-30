@@ -20,7 +20,7 @@ class Camera:
         self.scroll = [-self.camera.get_width() // 2, -self.camera.get_height() // 2]
         self.scrolling = False
         self.zoomValues = [.25, .5, 1, 2, 4]
-        self.zIndex = 1
+        self.zIndex = 2
 
     @property
     def zoom(self):

@@ -42,7 +42,7 @@ class Font:
         # constants used for rendering
         self.SPACEWIDTH = int(self.characters['a'].get_width())
         self.SPACING = self.scale
-        self.NEWLINEHEIGHT = int(self.characters[self.twoPixels[0]].get_height())
+        self.NEWLINEHEIGHT = int(self.characters[self.twoPixels[0]].get_height()) + 2 * self.scale
 
         # make each letter's background transparent, (the transparency is set to 1, 1, 1, so that the characters can be recolored to black easily using 0, 0, 0)
         for char in self.characters:

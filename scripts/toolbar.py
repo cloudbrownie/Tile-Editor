@@ -5,7 +5,9 @@ from .sheets import Sheets
 class Toolbar:
     def __init__(self, window):
         self.window = window
-        self.font = Font(self.window.scale)
+        self.inactiveFont = Font(self.window.scale)
+        self.inactiveFont.recolor((202, 210, 197))
+        self.activeFont = Font(self.window.scale)
         self.sheets = Sheets(self)
         self.clock = self.window.editor.clock
 
@@ -51,11 +53,12 @@ class Toolbar:
         self.sheetnameSurf.fill(self.COLOR)
 
         for sheetname in self.sheets.sheets:
-            if sheetname == self.sheetLock:
-                self.font.render(self.sheetnameSurf, sheetname, (self.sheets.sheets[sheetname][1].x + self.nameOffsets[sheetname], self.sheets.sheets[sheetname][1].y))
-                self.font.render(self.sheetnameSurf, '-', (self.sheets.sheets[sheetname][1].x + self.lockOffset, self.sheets.sheets[sheetname][1].y))
+            if sheetname == self.sheetLock or sheetname == self.currentSheet:
+                self.sheetnameSurf.blit(self.sheets.sheets[sheetname][4][1], (self.sheets.sheets[sheetname][1].x + self.nameOffsets[sheetname], self.sheets.sheets[sheetname][1].y))
+                if sheetname == self.sheetLock:
+                    self.activeFont.render(self.sheetnameSurf, '-', (self.sheets.sheets[sheetname][1].x + self.lockOffset, self.sheets.sheets[sheetname][1].y))
             else:
-                self.font.render(self.sheetnameSurf, sheetname, (self.sheets.sheets[sheetname][1].x + self.nameOffsets[sheetname], self.sheets.sheets[sheetname][1].y))
+                self.sheetnameSurf.blit(self.sheets.sheets[sheetname][4][0], (self.sheets.sheets[sheetname][1].x + self.nameOffsets[sheetname], self.sheets.sheets[sheetname][1].y))
 
 
         self.display.blit(self.sheetnameSurf, (0, 0))
@@ -84,6 +87,7 @@ class Toolbar:
                     self.lockOffset = -20
                     self.sheetLock = self.currentSheet
                     self.tileLock = None
+                    self.currentTileScroll = 0
 
     def renderTiles(self):
         self.tilerenderSurf.fill(self.COLOR)
@@ -107,7 +111,7 @@ class Toolbar:
 
     def adjustTileScroll(self, direction):
         self.currentTileScroll = max(0, self.currentTileScroll + self.TILESCROLLSPEED * direction)
-        self.currentTileScroll = min(self.sheets.sheets[self.sheetLock][-1], self.currentTileScroll)
+        self.currentTileScroll = min(self.sheets.sheets[self.sheetLock][3], self.currentTileScroll)
 
     def selectTile(self, cursor, lock=False):
         zeroMousePos = list(cursor)

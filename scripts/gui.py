@@ -9,5 +9,8 @@ class GUI:
         self.font = Font(self.scale)
 
     def render(self, input):
-        # pen position
-        self.font.render(self.window.window, str(input.penPosition), (self.window.window.get_width() * .2 + 2, 2))
+        # making the render text
+        renderText = f'[-] or [+] Layer {input.currentLayer}\n[Q] {input.penPosition}'
+
+        # render the text
+        self.font.render(self.window.window, renderText, (self.window.window.get_width() * .2 + 2, 2))
