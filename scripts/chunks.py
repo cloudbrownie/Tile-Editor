@@ -6,8 +6,9 @@ class Chonky:
         self.editor = editor
 
         self.layer = 0
-        self.tileSize = 16
-        self.chunks = {
+        self.TILESIZE = 16
+        self.CHUNKSIZE = 8
+        self.DEFAULTCHUNKINFO = {
             'tiles':{
 
             },
@@ -16,6 +17,7 @@ class Chonky:
                 'fg':[]
             }
         }
+        self.chunks = {}
 
         self.sheetReferences = {
 
@@ -28,8 +30,16 @@ class Chonky:
     def render(self):
         pass
 
-    def addChunk(self, location):
-        pass
+    def addChunk(self, chunkID, tile=True):
+        self.chunks[chunkID] = self.DEFAULTCHUNKINFO
+
+    def getChunkID(self, location, tile=True):
+        x, y = location
+        if tile:
+            chunkID = x // self.CHUNKSIZE, y // self.CHUNKSIZE
+        else:
+            chunkID = x // (self.CHUNKSIZE * self.TILESIZE), y // (self.CHUNKSIZE * self.TILESIZE)
+        return chunkID
 
     def getVisibleChunks(self):
         return
@@ -38,22 +48,26 @@ class Chonky:
         return
 
     def addTile(self, layer, tiledata):
-        sheetname, sheetLoc, chunkLoc = tiledata
+        sheetname, sheetLoc, loc = tiledata
 
-        if layer not in self.chunks['tiles']:
-            self.addLayer(layer)
+        chunkID = self.getChunkID(loc)
+        if chunkID not in self.chunks:
+            self.addChunk(chunkID)
+
+        if layer not in self.chunks[chunkID]['tiles']:
+            self.addLayer(chunkID, layer)
 
         if tiledata[0] not in self.sheetReferences:
             self.addSheetRef(sheetname)
 
-        updatedTileData = self.getSheetID(sheetname), sheetLoc, chunkLoc
-        self.chunks['tiles'][layer].append(updatedTileData)
+        updatedTileData = self.getSheetID(sheetname), sheetLoc, loc
+        self.chunks[chunkID]['tiles'][layer].append(updatedTileData)
 
     def removeTile(self):
         pass
 
-    def addLayer(self, layer):
-        self.chunks['tiles'][layer] = []
+    def addLayer(self, chunkID, layer):
+        self.chunks[chunkID]['tiles'][layer] = []
 
     def addSheetRef(self, sheetname):
         self.sheetID += 1

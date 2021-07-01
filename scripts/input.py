@@ -6,7 +6,7 @@ class Input:
         self.editor = editor
 
         self.mouseposition = 0, 0
-        self.tileSize = self.editor.chunks.tileSize
+        self.TILESIZE = self.editor.chunks.TILESIZE
 
         self.penPositionTypes = ['exact', 'grid']
         self.penPositionIndex = 0
@@ -28,7 +28,7 @@ class Input:
         if self.penPositionTypes[self.penPositionIndex] == 'exact':
             return mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0], my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]
         elif self.penPositionTypes[self.penPositionIndex] == 'grid':
-            return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.tileSize, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.tileSize
+            return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE
 
     @property
     def penPositionInfo(self):
@@ -75,8 +75,9 @@ class Input:
                         if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
                             sheet = self.editor.window.toolbar.sheetLock
                             sheetLoc = self.editor.window.toolbar.tileLockLocation
-                            chunkLocation = self.penPosition
-                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, chunkLocation))
+                            loc = self.penPosition
+                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc))
+
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(True)
