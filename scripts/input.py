@@ -14,6 +14,9 @@ class Input:
         self.penToolTypes = ['draw', 'erase']
         self.penToolIndex = 0
 
+        self.assetTypes = ['tiles', 'decoration', 'platforms']
+        self.assetIndex = 0
+
         self.currentLayer = 0
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
@@ -30,6 +33,10 @@ class Input:
     @property
     def penPositionInfo(self):
         return f'{self.penPositionTypes[self.penPositionIndex]} {self.penPosition}'
+
+    @property
+    def currentPositionType(self):
+        return self.penPositionTypes[self.penPositionIndex]
 
     def update(self):
         # get the mouse position

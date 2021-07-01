@@ -5,12 +5,21 @@ class Chonky:
     def __init__(self, editor):
         self.layer = 0
         self.tileSize = 16
-        self.tiles = []
+        self.chunks = {
+            'tiles':[],
+            'decor':{
+                'bg':[],
+                'fg':[]
+            }
+        }
 
     def update(self):
         return
 
     def render(self):
+        pass
+
+    def addChunk(self, location):
         pass
 
     def getVisibleChunks(self):

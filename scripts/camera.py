@@ -21,6 +21,7 @@ class Camera:
         self.scrolling = False
         self.zoomValues = [.25, .5, 1, 2, 4]
         self.zIndex = 2
+        self.tileHoverAlpha = 120
 
     @property
     def zoom(self):
@@ -51,9 +52,24 @@ class Camera:
     def render(self):
         self.camera.fill(self.color)
 
+        # render the current tile
+        if self.window.toolbar.tileLock:
+            tile = self.window.toolbar.tileLock.copy()
+            tile.set_alpha(self.tileHoverAlpha)
+            x, y = self.window.editor.input.penPosition
+            tileSize = self.window.editor.chunks.tileSize
+            if self.window.editor.input.currentPositionType == 'grid':
+                x *= tileSize
+                y *= tileSize
+                self.camera.blit(tile, (x - self.scroll[0], y - self.scroll[1]))
+            else:
+                self.camera.blit(tile, (x - self.scroll[0] - tileSize // 2, y - self.scroll[1] - tileSize // 2))
+
+        # lines to indicate the origin
         pygame.draw.line(self.camera, (202, 210, 197), (0 - self.scroll[0], self.originCross // 2 - self.scroll[1]), (0 - self.scroll[0], -self.originCross // 2 - self.scroll[1]), self.scale)
         pygame.draw.line(self.camera, (202, 210, 197), (self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), (-self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), self.scale)
 
+        # update the camera
         self.display.blit(pygame.transform.scale(self.camera, self.display.get_size()), (0, 0))
         self.window.window.blit(self.display, (self.window.window.get_width() * .2, 0))
 
