@@ -41,6 +41,7 @@ class Toolbar:
         self.sheetLock = None
         self.currentTile = None
         self.tileLock = None
+        self.tileLockLocation = 0, 0
         self.NAMESPEED = 10
         self.NAMESCROLLSPEED = 40
         self.TILESCROLLSPEED = 40
@@ -126,6 +127,7 @@ class Toolbar:
                         self.currentTile = tile
                         if lock and self.tileLock != tile:
                             self.tileLock = tile
+                            self.tileLockLocation = i, j
 
     def render(self):
         self.display.fill(self.COLOR)

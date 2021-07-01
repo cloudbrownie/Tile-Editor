@@ -14,7 +14,7 @@ class Input:
         self.penToolTypes = ['draw', 'erase']
         self.penToolIndex = 0
 
-        self.assetTypes = ['tiles', 'decoration', 'platforms']
+        self.assetTypes = ['tiles', 'decoration']
         self.assetIndex = 0
 
         self.currentLayer = 0
@@ -37,6 +37,14 @@ class Input:
     @property
     def currentPositionType(self):
         return self.penPositionTypes[self.penPositionIndex]
+
+    @property
+    def currentToolType(self):
+        return self.penToolTypes[self.penToolIndex]
+
+    @property
+    def currentAssetType(self):
+        return self.assetTypes[self.assetIndex]
 
     def update(self):
         # get the mouse position
@@ -63,6 +71,12 @@ class Input:
                         self.editor.window.toolbar.selectSheet(self.cursor, lock=True)
                     elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.divider.centery:
                         self.editor.window.toolbar.selectTile(self.mouseposition, lock=True)
+                    elif self.mouseposition[0] > self.editor.window.toolbar.width:
+                        if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+                            sheet = self.editor.window.toolbar.sheetLock
+                            sheetLoc = self.editor.window.toolbar.tileLockLocation
+                            chunkLocation = self.penPosition
+                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, chunkLocation))
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(True)
