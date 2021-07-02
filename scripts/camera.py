@@ -52,6 +52,13 @@ class Camera:
     def render(self):
         self.camera.fill(self.COLOR)
 
+        # render the chunks
+        chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect, self.scroll)
+        for chunk in chunkInfo:
+            surf = chunk[0]
+            x, y = chunk[1]
+            self.camera.blit(surf, (x - self.scroll[0], y - self.scroll[1]))
+
         # render the current tile
         if self.window.toolbar.tileLock:
             tile = self.window.toolbar.tileLock.copy()

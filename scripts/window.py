@@ -13,7 +13,7 @@ class Window:
         self.editor = editor
 
         # create the editor window
-        self.window = pygame.display.set_mode(WINDOWSIZE, flags=pygame.SCALED | pygame.RESIZABLE)
+        self.window = pygame.display.set_mode(WINDOWSIZE)
         pygame.display.set_caption('Tile Editor')
 
         # scale for pixel art aesthetic
@@ -29,7 +29,6 @@ class Window:
 
         self.toolbar.render()
         self.camera.render()
-        self.editor.chunks.render()
         self.gui.render(self.editor.input)
 
         pygame.display.flip()

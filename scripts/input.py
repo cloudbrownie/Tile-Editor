@@ -76,7 +76,9 @@ class Input:
                             sheet = self.editor.window.toolbar.sheetLock
                             sheetLoc = self.editor.window.toolbar.tileLockLocation
                             loc = self.penPosition
-                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc))
+                            sheets = self.editor.window.toolbar.sheets.sheets
+                            cnfg = self.editor.window.toolbar.sheets.config
+                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
 
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
@@ -100,6 +102,9 @@ class Input:
                     self.currentLayer += 1
                 elif event.key == pygame.K_MINUS:
                     self.currentLayer -= 1
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    self.editor.stop()
 
         # update the selected sheet name
         self.editor.window.toolbar.selectSheet(self.cursor)

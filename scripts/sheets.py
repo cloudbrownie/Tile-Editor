@@ -13,6 +13,7 @@ class Sheets:
         }
 
         # init the config, will be a dictionary of 2D lists of offsets to their corresponding tiles
+        # example: {'name':[[2D list of cnfg per asset]]}
         self.config = {
         }
 
