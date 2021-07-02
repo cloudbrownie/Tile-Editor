@@ -60,7 +60,7 @@ class Camera:
             self.camera.blit(surf, (x - self.scroll[0], y - self.scroll[1]))
 
         # render the current tile
-        if self.window.toolbar.tileLock:
+        if self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw':
             tile = self.window.toolbar.tileLock.copy()
             tile.set_alpha(self.TILEHOVERALPHA)
             x, y = self.window.editor.input.penPosition

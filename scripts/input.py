@@ -79,6 +79,12 @@ class Input:
                             sheets = self.editor.window.toolbar.sheets.sheets
                             cnfg = self.editor.window.toolbar.sheets.config
                             self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
+                        elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+                            loc = self.penPosition
+                            sheets = self.editor.window.toolbar.sheets.sheets
+                            cnfg = self.editor.window.toolbar.sheets.config
+                            self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
+
 
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:

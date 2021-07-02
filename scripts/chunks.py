@@ -92,8 +92,6 @@ class Chonky:
         return
 
     def addTile(self, layer, tiledata, sheets, sheetCnfg):
-        # somehow this method adds the tile to all chunks
-
         # unpack the tile data
         sheetname, sheetLoc, loc = tiledata
 
@@ -117,10 +115,42 @@ class Chonky:
 
         # update the tile data to use the sheet reference so the saved .json doesn't get bloated with long strings
         updatedTileData = self.getSheetID(sheetname), sheetLoc, (tilex, tiley)
+
+        # check if a tile exists in this exact location already, if so, overwrite it
+        for i, tile in enumerate(self.chunks[chunkID]['tiles'][layer]):
+            if tile[2] == updatedTileData[2]:
+                self.chunks[chunkID]['tiles'][layer].pop(i)
+
         self.chunks[chunkID]['tiles'][layer].append(updatedTileData)
 
         # redraw the cached surface
         self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+
+    def removeTile(self, layer, loc, sheets, sheetCnfg):
+        # find the current chunk
+        chunkID = self.getChunkID(loc)
+        if chunkID in self.chunks:
+
+            # get the list of tiles of the selected layer
+            if layer in self.chunks[chunkID]['tiles']:
+                tiles = self.chunks[chunkID]['tiles'][layer]
+
+                # fix the relative chunk position
+                tilex, tiley = loc
+                tilex %= self.CHUNKSIZE
+                tiley %= self.CHUNKSIZE
+                if tilex < 0:
+                    tilex = self.CHUNKSIZE + tilex
+                if tiley < 0:
+                    tiley = self.CHUNKSIZE + tiley
+                loc = tilex, tiley
+
+                # iterate through the tiles and remove the tile that matches the given grid position
+                for i, tile in enumerate(tiles):
+                    if tile[2] == loc:
+                        tiles.pop(i)
+
+                self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         # get the tiles in the chunk
@@ -156,9 +186,6 @@ class Chonky:
 
         # cache the surf
         self.chunks[chunkID]['img'] = surf.copy()
-
-    def removeTile(self):
-        pass
 
     def addLayer(self, chunkID, layer):
         # just add a new layer in the dictionary of layers
