@@ -150,6 +150,7 @@ class Chonky:
                     if tile[2] == loc:
                         tiles.pop(i)
 
+                # redraw the chunk surf to update it 
                 self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):

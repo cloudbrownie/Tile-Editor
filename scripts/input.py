@@ -18,6 +18,7 @@ class Input:
         self.assetIndex = 0
 
         self.currentLayer = 0
+        self.holding = False
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
@@ -54,7 +55,6 @@ class Input:
         # handle inputs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
                 self.editor.stop()
 
             elif event.type == pygame.MOUSEWHEEL:
@@ -72,26 +72,17 @@ class Input:
                     elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.divider.centery:
                         self.editor.window.toolbar.selectTile(self.mouseposition, lock=True)
                     elif self.mouseposition[0] > self.editor.window.toolbar.width:
-                        if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
-                            sheet = self.editor.window.toolbar.sheetLock
-                            sheetLoc = self.editor.window.toolbar.tileLockLocation
-                            loc = self.penPosition
-                            sheets = self.editor.window.toolbar.sheets.sheets
-                            cnfg = self.editor.window.toolbar.sheets.config
-                            self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
-                        elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
-                            loc = self.penPosition
-                            sheets = self.editor.window.toolbar.sheets.sheets
-                            cnfg = self.editor.window.toolbar.sheets.config
-                            self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
-
+                        self.holding = True
 
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(True)
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 2:
+                if event.button == 1:
+                    self.holding = False
+
+                elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(False)
 
@@ -109,8 +100,26 @@ class Input:
                 elif event.key == pygame.K_MINUS:
                     self.currentLayer -= 1
                 elif event.key == pygame.K_ESCAPE:
-                    pygame.quit()
                     self.editor.stop()
+
+        # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
+        if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
+            self.holding = False
+
+        # call the editing methods
+        if self.holding:
+            if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+                sheet = self.editor.window.toolbar.sheetLock
+                sheetLoc = self.editor.window.toolbar.tileLockLocation
+                loc = self.penPosition
+                sheets = self.editor.window.toolbar.sheets.sheets
+                cnfg = self.editor.window.toolbar.sheets.config
+                self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
+            elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+                loc = self.penPosition
+                sheets = self.editor.window.toolbar.sheets.sheets
+                cnfg = self.editor.window.toolbar.sheets.config
+                self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
 
         # update the selected sheet name
         self.editor.window.toolbar.selectSheet(self.cursor)

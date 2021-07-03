@@ -29,6 +29,8 @@ class Editor:
         while self.running:
             self.update()
 
+        pygame.quit()
+
     def stop(self):
         self.running = False
 
