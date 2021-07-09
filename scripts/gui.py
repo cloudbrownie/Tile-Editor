@@ -22,7 +22,6 @@ class GUI:
             renderText +=  f'[-] {input.currentDecorationLayer} [+]\n'
 
         # add on the pen position info
-        renderText += f'[Q] {input.penPositionInfo}\n'
 
         # add on the current tool text
         renderText += f'\nCurrent Tool: {input.currentToolType}\n'

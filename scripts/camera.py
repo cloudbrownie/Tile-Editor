@@ -65,7 +65,7 @@ class Camera:
             tile.set_alpha(self.TILEHOVERALPHA)
             x, y = self.window.editor.input.penPosition
             TILESIZE = self.window.editor.chunks.TILESIZE
-            if self.window.editor.input.currentPositionType == 'grid':
+            if self.window.editor.input.currentAssetType == 'tiles':
                 x *= TILESIZE
                 y *= TILESIZE
                 self.camera.blit(tile, (x - self.scroll[0], y - self.scroll[1]))

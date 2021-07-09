@@ -11,9 +11,6 @@ class Input:
         self.mouseposition = 0, 0
         self.TILESIZE = self.editor.chunks.TILESIZE
 
-        self.penPositionTypes = ['exact', 'grid']
-        self.penPositionIndex = 0
-
         self.penToolTypes = ['draw', 'erase']
         self.penToolIndex = 0
 
@@ -32,18 +29,10 @@ class Input:
     def penPosition(self):
         mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
         my = self.mouseposition[1] * self.editor.window.camera.ratio[1]
-        if self.penPositionTypes[self.penPositionIndex] == 'exact':
+        if self.currentAssetType == 'decorations':
             return mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0], my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]
-        elif self.penPositionTypes[self.penPositionIndex] == 'grid':
+        elif self.currentAssetType == 'tiles':
             return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE
-
-    @property
-    def penPositionInfo(self):
-        return f'{self.penPositionTypes[self.penPositionIndex]} {self.penPosition}'
-
-    @property
-    def currentPositionType(self):
-        return self.penPositionTypes[self.penPositionIndex]
 
     @property
     def currentToolType(self):
@@ -101,8 +90,6 @@ class Input:
                     self.penToolIndex = 0
                 elif event.key == pygame.K_2:
                     self.penToolIndex = 1
-                elif event.key == pygame.K_q:
-                    self.penPositionIndex = (self.penPositionIndex + 1) % len(self.penPositionTypes)
                 elif event.key == pygame.K_EQUALS:
                     if self.currentAssetType == 'tiles':
                         self.currentLayer += 1
@@ -127,7 +114,7 @@ class Input:
         # call the editing methods
         if self.holding:
             # adding tiles
-            if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+            if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                 sheet = self.editor.window.toolbar.sheetLock
                 sheetLoc = self.editor.window.toolbar.tileLockLocation
                 loc = self.penPosition
@@ -135,7 +122,7 @@ class Input:
                 cnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
             # removing tiles
-            elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
+            elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                 loc = self.penPosition
                 sheets = self.editor.window.toolbar.sheets.sheets
                 cnfg = self.editor.window.toolbar.sheets.config
@@ -146,7 +133,7 @@ class Input:
                 sheet = self.editor.window.toolbar.sheetLock
                 sheetLoc = self.editor.window.toolbar.tileLockLocation
                 loc = self.penPosition
-                sheetCnfg = self.editor.window.toolbar.sheet.config
+                sheetCnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
             # removing decor
             elif self.currentToolType == 'draw' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
