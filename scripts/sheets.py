@@ -90,7 +90,12 @@ class Sheets:
         if self.sheets != {}:
             self.NAMESCROLLBOUND = max(0, sheetnameY - self.toolbar.sheetnameSurf.get_height() + self.YSPACE + self.toolbar.dividerPad.h // 2)
 
-    def loadConfig(self, filename):
-        # skip the method if there is no config
-        if not filename:
+    def loadConfig(self):
+        # check if there is a config.json in the input folder, exit the method if there is no config
+        files = [file for file in os.listdir('input/') if file.endswith('.json')]
+        if 'config.json' not in files:
             return
+
+        # otherwise, just load the .json data into the config
+        with open('input/config.json') as readFile:
+            self.config = json.load(readFile)

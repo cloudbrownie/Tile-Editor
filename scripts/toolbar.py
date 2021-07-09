@@ -25,6 +25,7 @@ class Toolbar:
         self.COLOR = 47, 62, 70
 
         self.sheets.loadSheets()
+        self.sheets.loadConfig()
         self.nameOffsets = {}
         self.nameOrigins = {}
         self.tileOrigins = {}
