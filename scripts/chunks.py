@@ -159,6 +159,12 @@ class Chonky:
                 # redraw the chunk surf to update it
                 self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
+    def addDecor(self, layer, decordata, sheets, sheetCnfg):
+        pass
+
+    def removeDecor(self, layer, loc, sheets, sheetCnfg):
+        pass
+
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         # get the tiles in the chunk
         layers = self.chunks[chunkID]['tiles'].copy()

@@ -126,6 +126,7 @@ class Input:
 
         # call the editing methods
         if self.holding:
+            # adding tiles
             if self.currentToolType == 'draw' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
                 sheet = self.editor.window.toolbar.sheetLock
                 sheetLoc = self.editor.window.toolbar.tileLockLocation
@@ -133,11 +134,23 @@ class Input:
                 sheets = self.editor.window.toolbar.sheets.sheets
                 cnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
+            # removing tiles
             elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.currentPositionType == 'grid' and self.editor.window.toolbar.tileLock:
                 loc = self.penPosition
                 sheets = self.editor.window.toolbar.sheets.sheets
                 cnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
+            # adding decor
+            elif self.currentToolType == 'draw' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
+                layer = self.currentDecorationLayer
+                sheet = self.editor.window.toolbar.sheetLock
+                sheetLoc = self.editor.window.toolbar.tileLockLocation
+                loc = self.penPosition
+                self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
+            # removing decor
+            elif self.currentToolType == 'draw' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
+                pass
+
 
         # update the selected sheet name
         self.editor.window.toolbar.selectSheet(self.cursor)
@@ -165,10 +178,17 @@ class Input:
         # clean the chunk data from the imgs
         chunkData = self.editor.chunks.cleanData
 
+        # store only the config data of the sheets in use
+        cnfg = {}
+        for sheet in self.editor.window.toolbar.sheets.config:
+            for key in self.editor.chunks.sheetReferences:
+                if sheet == self.editor.chunks.sheetReferences[key]:
+                    cnfg[sheet] == self.editor.window.toolbar.sheets.config[sheet]
+
         # the .json stores sheet reference dict, the config data dict, and the chunk data dict, stored in that order in a single dict
         data = {
         'refs':self.editor.chunks.sheetReferences,
-        'config':self.editor.window.toolbar.sheets.config,
+        'config':cnfg,
         'chunks':chunkData
         }
 
