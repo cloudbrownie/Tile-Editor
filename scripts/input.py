@@ -17,11 +17,14 @@ class Input:
         self.penToolTypes = ['draw', 'erase']
         self.penToolIndex = 0
 
-        self.assetTypes = ['tiles', 'decoration']
+        self.assetTypes = ['tiles', 'decorations']
         self.assetIndex = 0
 
         self.currentLayer = 0
         self.holding = False
+
+        self.decoLayers = ['Foreground', 'Background']
+        self.decoLayerIndex = 0
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
@@ -49,6 +52,10 @@ class Input:
     @property
     def currentAssetType(self):
         return self.assetTypes[self.assetIndex]
+
+    @property
+    def currentDecorationLayer(self):
+        return self.decoLayers[self.decoLayerIndex]
 
     def update(self):
         # get the mouse position
@@ -95,17 +102,23 @@ class Input:
                 elif event.key == pygame.K_2:
                     self.penToolIndex = 1
                 elif event.key == pygame.K_q:
-                    self.penPositionIndex += 1
-                    if self.penPositionIndex >= len(self.penPositionTypes):
-                        self.penPositionIndex = 0
+                    self.penPositionIndex = (self.penPositionIndex + 1) % len(self.penPositionTypes)
                 elif event.key == pygame.K_EQUALS:
-                    self.currentLayer += 1
+                    if self.currentAssetType == 'tiles':
+                        self.currentLayer += 1
+                    elif self.currentAssetType == 'decorations':
+                        self.decoLayerIndex = (self.decoLayerIndex + 1) % len(self.decoLayers)
                 elif event.key == pygame.K_MINUS:
-                    self.currentLayer -= 1
+                    if self.currentAssetType == 'tiles':
+                        self.currentLayer -= 1
+                    elif self.currentAssetType == 'decorations':
+                        self.decoLayerIndex = (self.decoLayerIndex - 1) % len(self.decoLayers)
                 elif event.key == pygame.K_ESCAPE:
                     self.editor.stop()
                 elif event.key == pygame.K_s:
                     self.save()
+                elif event.key == pygame.K_w:
+                    self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
