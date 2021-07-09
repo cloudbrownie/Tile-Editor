@@ -1,5 +1,5 @@
 import time
-
+import datetime
 
 class Clock:
     def __init__(self):
@@ -18,3 +18,7 @@ class Clock:
     @property
     def runTime(self):
         return max(0, time.time() - self.startTime)
+
+    def getDate(self):
+        now = datetime.datetime.now()
+        return now.strftime('%m-%d-%Y %H.%M.%S')

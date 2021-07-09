@@ -1,5 +1,8 @@
 import pygame
 import sys
+import shutil
+import os
+import json
 
 class Input:
     def __init__(self, editor):
@@ -101,6 +104,8 @@ class Input:
                     self.currentLayer -= 1
                 elif event.key == pygame.K_ESCAPE:
                     self.editor.stop()
+                elif event.key == pygame.K_s:
+                    self.save()
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
@@ -133,3 +138,36 @@ class Input:
 
         # update the camera scroll in here since it only updates based on inputs anyways
         self.editor.window.camera.updateScroll()
+
+    """
+    create a new folder with all of the current chunk data in a .json file, copies of each of the spritesheets, and a copy of the config for each of the spritesheets
+    """
+    def save(self):
+        # save the path to the folder
+        path = f'output/{self.editor.clock.getDate()}'
+
+        # create a folder in the output folder to store all the data in
+        os.mkdir(path)
+
+        # clean the chunk data from the imgs
+        chunkData = self.editor.chunks.cleanData
+
+        # the .json stores sheet reference dict, the config data dict, and the chunk data dict, stored in that order in a single dict
+        data = {
+        'refs':self.editor.chunks.sheetReferences,
+        'config':self.editor.window.toolbar.sheets.config,
+        'chunks':chunkData
+        }
+
+        # write the data to the .json
+        with open(f'{path}/data.json', 'w') as writeFile:
+            json.dump(data, writeFile)
+
+        # gather the paths of all used sheets
+        sheets = []
+        for id in self.editor.chunks.sheetReferences:
+            sheets.append(f'input/{self.editor.chunks.sheetReferences[id]}')
+
+        # copy all sheets over into the new folder
+        for sheet in sheets:
+            shutil.copy(sheet, path)

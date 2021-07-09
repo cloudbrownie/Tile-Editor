@@ -37,7 +37,7 @@ class Chonky:
 
         # iterate through the visible chunks
         for chunk in chunks:
-            data = self.chunks[chunk]['img'], (chunk[0] * self.TILESIZE * self.CHUNKSIZE, chunk[1] * self.TILESIZE * self.CHUNKSIZE)
+            data = self.chunks[str(chunk)]['img'], (chunk[0] * self.TILESIZE * self.CHUNKSIZE, chunk[1] * self.TILESIZE * self.CHUNKSIZE)
             tileSurfs.append(data)
 
         return tileSurfs
@@ -57,8 +57,11 @@ class Chonky:
                 chunkx = i + int(math.ceil(scroll[0] / (self.TILESIZE * self.CHUNKSIZE)))
                 chunky = j + int(math.ceil(scroll[1] / (self.TILESIZE * self.CHUNKSIZE)))
 
+                # stringify the chunk id
+                chunkID = f'({chunkx}, {chunky})'
+
                 # skip the chunk id if it doesnt exist
-                if (chunkx, chunky)not in self.chunks:
+                if chunkID not in self.chunks:
                     continue
 
                 # append this new id
@@ -84,9 +87,12 @@ class Chonky:
         x, y = location
         # find the chunk id, different equation if looking for tile's
         if tile:
-            return x // self.CHUNKSIZE, y // self.CHUNKSIZE
+            x = int(x // self.CHUNKSIZE)
+            y = int(y // self.CHUNKSIZE)
         else:
-            return x // (self.CHUNKSIZE * self.TILESIZE), y // (self.CHUNKSIZE * self.TILESIZE)
+            x = int(x // (self.CHUNKSIZE * self.TILESIZE))
+            y = int(y // (self.CHUNKSIZE * self.TILESIZE))
+        return f'({x}, {y})'
 
     def getTile(self):
         return
@@ -150,7 +156,7 @@ class Chonky:
                     if tile[2] == loc:
                         tiles.pop(i)
 
-                # redraw the chunk surf to update it 
+                # redraw the chunk surf to update it
                 self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
@@ -213,3 +219,16 @@ class Chonky:
 
     def flood(self):
         pass
+
+    '''
+    used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons
+    '''
+    @property
+    def cleanData(self):
+        newChunkData = {}
+        for chunk in self.chunks:
+            newChunkData[chunk] = {
+            'tiles':self.chunks[chunk]['tiles'],
+            'decor':self.chunks[chunk]['decor']
+            }
+        return newChunkData
