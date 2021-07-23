@@ -21,7 +21,7 @@ class Camera:
         self.scrolling = False
         self.zoomValues = [.25, .5, 1, 2, 4]
         self.zIndex = 2
-        self.TILEHOVERALPHA = 120
+        self.ASSETHOVERALPHA = 120
 
     @property
     def zoom(self):
@@ -60,17 +60,22 @@ class Camera:
             self.camera.blit(surf, (x - self.scroll[0], y - self.scroll[1]))
 
         # render the current tile
-        if self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw':
+        if self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw' and self.window.editor.input.currentAssetType == 'tiles':
             tile = self.window.toolbar.tileLock.copy()
-            tile.set_alpha(self.TILEHOVERALPHA)
+            tile.set_alpha(self.ASSETHOVERALPHA)
             x, y = self.window.editor.input.penPosition
-            TILESIZE = self.window.editor.chunks.TILESIZE
-            if self.window.editor.input.currentAssetType == 'tiles':
-                x *= TILESIZE
-                y *= TILESIZE
-                self.camera.blit(tile, (x - self.scroll[0], y - self.scroll[1]))
-            else:
-                self.camera.blit(tile, (x - self.scroll[0] - TILESIZE // 2, y - self.scroll[1] - TILESIZE // 2))
+            x *= self.window.editor.chunks.TILESIZE
+            y *= self.window.editor.chunks.TILESIZE
+            self.camera.blit(tile, (x - self.scroll[0], y - self.scroll[1]))
+
+        # render differently if decor
+        elif self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw' and self.window.editor.input.currentAssetType == 'decorations':
+            decor = self.window.toolbar.tileLock.copy()
+            decor.set_alpha(self.ASSETHOVERALPHA)
+            x, y = self.window.editor.input.penPosition
+            size = decor.get_size()
+            self.camera.blit(decor, (x - self.scroll[0] - size[0] // 2, y - self.scroll[1] - size[1] // 2))
+
 
         # lines to indicate the origin
         pygame.draw.line(self.camera, (202, 210, 197), (0 - self.scroll[0], self.originCross // 2 - self.scroll[1]), (0 - self.scroll[0], -self.originCross // 2 - self.scroll[1]), self.scale)

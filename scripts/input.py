@@ -44,7 +44,10 @@ class Input:
 
     @property
     def currentDecorationLayer(self):
-        return self.decoLayers[self.decoLayerIndex]
+        if self.decoLayerIndex == 0:
+            return 'fg'
+        elif self.decoLayerIndex == 1:
+            return 'bg'
 
     def update(self):
         # get the mouse position
@@ -132,7 +135,9 @@ class Input:
                 layer = self.currentDecorationLayer
                 sheet = self.editor.window.toolbar.sheetLock
                 sheetLoc = self.editor.window.toolbar.tileLockLocation
-                loc = self.penPosition
+                locx, locy = self.penPosition
+                loc = locx - self.editor.window.toolbar.tileLock.get_width() // 2, locy - self.editor.window.toolbar.tileLock.get_height() // 2
+                sheets = self.editor.window.toolbar.sheets.sheets
                 sheetCnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
             # removing decor

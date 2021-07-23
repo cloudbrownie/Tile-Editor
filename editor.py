@@ -17,7 +17,6 @@ class Editor:
         self.input = Input(self)
 
     def update(self):
-        self.chunks.update()
         self.window.update()
         self.input.update()
         self.clock.tick()

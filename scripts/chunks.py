@@ -13,6 +13,7 @@ class Chonky:
         self.layer = 0
         self.TILESIZE = 16
         self.CHUNKSIZE = 8
+        self.CHUNKPX = self.TILESIZE * self.CHUNKSIZE
         self.chunks = {}
 
         self.sheetReferences = {
@@ -20,8 +21,9 @@ class Chonky:
         }
         self.sheetID = 0
 
-    def update(self):
-        return
+    @property
+    def currentChunks(self):
+        return [chunk for chunk in self.chunks]
 
     """
     used by the rendering class to render the bg, tiles, and foreground.
@@ -37,7 +39,7 @@ class Chonky:
 
         # iterate through the visible chunks
         for chunk in chunks:
-            data = self.chunks[str(chunk)]['img'], (chunk[0] * self.TILESIZE * self.CHUNKSIZE, chunk[1] * self.TILESIZE * self.CHUNKSIZE)
+            data = self.chunks[str(chunk)]['imgs']['fg'], (chunk[0] * self.CHUNKPX, chunk[1] * self.CHUNKPX)
             tileSurfs.append(data)
 
         return tileSurfs
@@ -46,16 +48,16 @@ class Chonky:
         # start a list of chunks to return
         chunks = []
         # calculate the amount of horizontal and vertical chunks
-        horizontalChunks = int(math.ceil(camRect.w / (self.TILESIZE * self.CHUNKSIZE)))
-        verticalChunks = int(math.ceil(camRect.h / (self.TILESIZE * self.CHUNKSIZE)))
+        horizontalChunks = int(math.ceil(camRect.w / (self.CHUNKPX)))
+        verticalChunks = int(math.ceil(camRect.h / (self.CHUNKPX)))
 
         # iterate through the amount of horizontal and vertical chunks
         for i in range(horizontalChunks):
             for j in range(verticalChunks):
 
                 # apply the scroll to the location
-                chunkx = i + int(math.ceil(scroll[0] / (self.TILESIZE * self.CHUNKSIZE)))
-                chunky = j + int(math.ceil(scroll[1] / (self.TILESIZE * self.CHUNKSIZE)))
+                chunkx = i + int(math.ceil(scroll[0] / (self.CHUNKPX)))
+                chunky = j + int(math.ceil(scroll[1] / (self.CHUNKPX)))
 
                 # stringify the chunk id
                 chunkID = f'({chunkx}, {chunky})'
@@ -79,10 +81,13 @@ class Chonky:
                 'bg':[],
                 'fg':[]
             },
-            'img':None
+            'imgs':{
+                'bg':None,
+                'fg':None
+            }
         }
 
-    def getChunkID(self, location, tile=True):
+    def getChunkID(self, location, tile=True, string=True):
         # unpack the x, y locations
         x, y = location
         # find the chunk id, different equation if looking for tile's
@@ -90,9 +95,12 @@ class Chonky:
             x = int(x // self.CHUNKSIZE)
             y = int(y // self.CHUNKSIZE)
         else:
-            x = int(x // (self.CHUNKSIZE * self.TILESIZE))
-            y = int(y // (self.CHUNKSIZE * self.TILESIZE))
-        return f'({x}, {y})'
+            x = int(x // (self.CHUNKPX))
+            y = int(y // (self.CHUNKPX))
+        if string:
+            return f'({x}, {y})'
+        else:
+            return x, y
 
     def getTile(self):
         return
@@ -160,7 +168,98 @@ class Chonky:
                 self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def addDecor(self, layer, decordata, sheets, sheetCnfg):
-        pass
+        # unpack the decordata
+        sheet, sheetLoc, loc = decordata
+        sheetrow, sheetcol = sheetLoc
+
+        # grab a copy of the decoration surface
+        decorSurf = sheets[sheet][0][sheetrow][sheetcol].copy()
+
+        # grab the dimensions of the decoration surface
+        width, height = decorSurf.get_size()
+
+        # find the string chunk id
+        chunkx, chunky = self.getChunkID(loc, tile=False, string=False)
+        stringifiedChunkID = f'({chunkx}, {chunky})'
+        
+        # find the relative blit location of the decor
+        blitx = loc[0] - chunkx * self.CHUNKPX
+        blity = loc[1] - chunky * self.CHUNKPX
+
+        # add the original chunk if the original chunk doesn't exist
+        if stringifiedChunkID not in self.chunks:
+            self.addChunk(stringifiedChunkID)
+        
+        # find the horizontal and vertical spill over
+        horizontalSpillOver = max(width - (chunkx * self.CHUNKPX + self.CHUNKPX - loc[0]), 0)
+        verticalSpillOver = max(height - (chunky * self.CHUNKPX + self.CHUNKPX - loc[1]), 0)
+
+        # find how many more chunks the spill over spills into
+        chunksToTheRight = math.ceil(horizontalSpillOver / (self.CHUNKPX))
+        chunksToTheBottom = math.ceil(verticalSpillOver / (self.CHUNKPX))
+
+        # THIS NEXT PART DOES NOT WORK SINCE IF THERE ARE NO CHUNKS TO THE RIGHT OR TO THE BOTTOM, NO NEW CHUNKS WILL BE CREATED
+        rightChunks = []
+        # find chunks to the right of the original chunk
+        for i in range(chunksToTheRight):
+            newChunkx = chunkx + i + 1
+            newChunk = newChunkx, chunky
+            rightChunks.append(newChunk)
+        # find chunks to the bottom of the original chunk and to the bottom of the spill over chunks on the right
+        rightChunks.append((chunkx, chunky))
+        bottomChunks = []
+        for i in range(chunksToTheBottom):
+            for chunk in rightChunks:
+                newChunky = chunky + i + 1
+                newChunk = chunk[0], newChunky
+                # these chunks are kept separate for now since it would just continually add new chunks with no end
+                bottomChunks.append(newChunk)
+        # merge the chunk lists
+        spillOverChunks = rightChunks + bottomChunks
+        # create the new chunks if they don't exist
+        for chunk in spillOverChunks:
+            if str(chunk) not in self.chunks:
+                self.addChunk(str(chunk))
+
+        # for each chunk, find the subsurface coordinates needed to properly cut out the decoration for the chunk; init the info dict with the current chunk's info
+        infoPerChunk = {
+        stringifiedChunkID:[(blitx, blity), (0, 0, width - horizontalSpillOver, height - verticalSpillOver)]
+        }
+        for chunk in spillOverChunks:
+            spillChunkx, spillChunky = chunk
+
+            # create rects to find the correct rects for the decor through clipping
+            chunkRect = pygame.Rect(spillChunkx * self.CHUNKPX, spillChunky * self.CHUNKPX, self.CHUNKPX, self.CHUNKPX)
+            chunkRect.normalize()
+            decorRect = pygame.Rect(loc[0], loc[1], width, height)
+
+            decorClipRect = chunkRect.clip(decorRect)
+            
+            # use this clip to find the relative blit location
+            relativeBlitx = decorClipRect.x - spillChunkx * self.CHUNKPX
+            relativeBlity = decorClipRect.y - spillChunky * self.CHUNKPX
+
+            # normalize the clipped rect
+            decorClipRect.normalize()
+
+            # make the topleft coord of the rect relative to the actual decor for the subsurface
+            decorClipRect.x = decorClipRect.x - loc[0]
+            decorClipRect.y = decorClipRect.y - loc[1]
+
+            if decorClipRect.x >= 0 and decorClipRect.y >= 0:
+                infoPerChunk[f'({spillChunkx}, {spillChunky})'] = [(relativeBlitx, relativeBlity), (decorClipRect.x, decorClipRect.y, decorClipRect.w, decorClipRect.h)]
+
+        # for each chunk, add the decoration to the chunk's appropriate layer in the decoration dict
+        for chunk in infoPerChunk:
+            data = self.getSheetID(sheet), sheetLoc, infoPerChunk[chunk][0], infoPerChunk[chunk][1]
+            # check if this exact decor data exists in the current chunk and layer; if so, overwrite it
+            for i, decor in enumerate(self.chunks[chunk]['decor'][layer]):
+                if decor[2] == data[2]:
+                    self.chunks[chunk]['decor'][layer].pop(i)
+
+            self.chunks[chunk]['decor'][layer].append(data)
+            # redraw each cached image for each affected chunk
+            self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
     def removeDecor(self, layer, loc, sheets, sheetCnfg):
         pass
@@ -179,9 +278,9 @@ class Chonky:
         bg = self.chunks[chunkID]['decor']['bg']
         fg = self.chunks[chunkID]['decor']['fg']
 
-        # create a transparent surface for the tiles
-        surf = pygame.Surface((self.TILESIZE * self.CHUNKSIZE, self.TILESIZE * self.CHUNKSIZE))
-        surf.set_colorkey((0, 0, 0))
+        # create a transparent surface for the tiles and fg decor
+        fgsurf = pygame.Surface((self.CHUNKPX, self.CHUNKPX))
+        fgsurf.set_colorkey((0, 0, 0))
 
         # blit each tile and apply the configuration if it exists
         for row in tiles:
@@ -193,12 +292,37 @@ class Chonky:
                 tileY *= self.TILESIZE
                 if tile[0] in sheetCnfg:
                     offx, offy = sheetCnfg[tile[0]][imgRow][imgCol]
-                    surf.blit(img, (tileX + offx, tileY + offy))
+                    fgsurf.blit(img, (tileX + offx, tileY + offy))
                 else:
-                    surf.blit(img, (tileX, tileY))
+                    fgsurf.blit(img, (tileX, tileY))
 
-        # cache the surf
-        self.chunks[chunkID]['img'] = surf.copy()
+        # blit each fg decor 
+        for decor in self.chunks[chunkID]['decor']['fg']:
+            imgRow, imgCol = decor[1]
+            img = sheets[self.sheetReferences[decor[0]]][0][imgRow][imgCol].copy()
+            decorX, decorY = decor[2]
+            x, y, w, h = decor[3]
+            subsurfRect = pygame.Rect(x, y, w, h)
+            subsurface = img.subsurface(subsurfRect)
+            fgsurf.blit(subsurface, (decorX, decorY))
+
+        # create a transparent surface for the bg decor
+        bgsurf = pygame.Surface((self.CHUNKPX, self.CHUNKPX))
+        bgsurf.set_colorkey((0, 0, 0))
+
+        # blit each bg decor
+        for decor in self.chunks[chunkID]['decor']['bg']:
+            imgRow, imgCol = decor[1]
+            img = sheets[self.sheetReferences[decor[0]]][0][imgRow][imgCol].copy()
+            decorX, decorY = decor[2]
+            x, y, w, h = decor[3]
+            subsurfRect = pygame.Rect(x, y, w, h)
+            subsurface = img.subsurface(subsurfRect).copy()
+            bgsurf.blit(subsurface, (decorX, decorY))
+
+        # cache each surf
+        self.chunks[chunkID]['imgs']['fg'] = fgsurf.copy()
+        self.chunks[chunkID]['imgs']['bg'] = bgsurf.copy()
 
     def addLayer(self, chunkID, layer):
         # just add a new layer in the dictionary of layers
