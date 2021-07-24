@@ -133,6 +133,9 @@ class Toolbar:
     def render(self):
         self.display.fill(self.COLOR)
 
+        self.inactiveFont.update()
+        self.activeFont.update()
+
         self.updateSheetRects()
         self.renderSheetNames()
 

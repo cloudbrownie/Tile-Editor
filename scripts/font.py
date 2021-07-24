@@ -1,5 +1,5 @@
 import pygame
-
+import time
 
 class Font:
     def __init__(self, scale):
@@ -52,7 +52,24 @@ class Font:
                         self.characters[char].set_at((i, j), (1, 1, 1))
             self.characters[char].set_colorkey((1, 1, 1))
 
+        # create a cache dict for caching surfaces
+        self.renderCache = {}
+        self.lastCacheUpdate = time.time()
+        self.cacheUpdateTime = 10
+
     def render(self, surface, text, loc, centered=False, alignCenter=False, alignRight=False):
+        # check if the text has already been rendered and is in the cache
+        if text in self.renderCache:
+            # blit the cached render and return the size of the surface
+            surface.blit(self.renderCache[text][0], loc)
+            self.renderCache[text][1] = time.time()
+            return self.renderCache[text][0].get_size()
+
+        # create a surface to blit this text onto
+        renderSurf = pygame.Surface((self.size(text)))
+        renderSurf.fill((1, 1, 1))
+        renderSurf.set_colorkey((1, 1, 1))
+
         # fix the location if center is true (doesn't work well with text with new lines)
         if centered:
             width, height = self.size(text)
@@ -89,11 +106,11 @@ class Font:
             else:
                 # change the way it blits based on the alignment
                 if alignCenter:
-                    surface.blit(self.characters[char], (loc[0] + (max(alignWidths) - alignWidths[line]) // 2 + xOff, loc[1] + yOff))
+                    renderSurf.blit(self.characters[char], ((max(alignWidths) - alignWidths[line]) // 2 + xOff, yOff))
                 elif alignRight:
-                    surface.blit(self.characters[char], (loc[0] + (max(alignWidths) - alignWidths[line]) + xOff, loc[1] + yOff))
+                    renderSurf.blit(self.characters[char], ((max(alignWidths) - alignWidths[line]) + xOff, yOff))
                 else:
-                    surface.blit(self.characters[char], (loc[0] + xOff, loc[1] + yOff))
+                    renderSurf.blit(self.characters[char], (xOff, yOff))
                 xOff += self.characters[char].get_width() + self.SPACING
                 width += self.characters[char].get_width() + self.SPACING
                 if char in self.twoPixels:
@@ -101,11 +118,40 @@ class Font:
                 elif char in self.onePixel:
                     height += 1 * self.scale
 
+        # blit the render surface to the target surface
+        surface.blit(renderSurf, loc)
+
+        # cache the surface
+        self.cache(text, renderSurf)
+
         # return the size
         if widths == []:
             return width, height
 
         return max(widths), height
+
+    def cache(self, text, surface):
+        # if the text has been cached, update it the time since it was last used to now
+        if text in self.renderCache:
+            self.renderCache[text][1] = time.time()
+        # if the text is not in the cache, add it to the cache
+        else:
+            self.renderCache[text] = [surface, time.time()]
+
+
+    def update(self):
+        # only used for updating the cache
+        if time.time() - self.lastCacheUpdate >= self.cacheUpdateTime:
+            # make a list storing the cached renders to delete since deleting while iterating is a no no
+            deleteList = []
+            # iterate through each cached text and check to see if the last time the cached surf was used was longer than a minute
+            for text in self.renderCache:
+                if time.time() - self.renderCache[text][1] >= self.cacheUpdateTime:
+                    # delete the cached info from the cache to save space
+                    deleteList.append(text)
+            # delete all cached renders that are in the delete cache
+            for text in deleteList:
+                del self.renderCache[text]
 
     def recolor(self, color):
         # skip if the color changing to is the transparent color
@@ -143,7 +189,7 @@ class Font:
         if widths == []:
             return width, height
 
-        # return the list of widths if the text is supposed to aligned with the center
+        # return the list of widths if the text is supposed to aligned with the center or right
         elif notAlignLeft:
             return widths, height
 

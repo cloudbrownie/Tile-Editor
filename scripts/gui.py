@@ -32,3 +32,6 @@ class GUI:
 
         # render the text
         self.font.render(self.window.window, renderText, (self.window.window.get_width() * .2 + 2, 2))
+
+        # update the font's cache
+        self.font.update()
