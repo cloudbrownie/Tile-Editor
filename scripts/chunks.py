@@ -159,13 +159,18 @@ class Chonky:
                     tiley = self.CHUNKSIZE + tiley
                 loc = tilex, tiley
 
+                # store a boolean of whether or not the chunk has changed in order to see if re caching the chunk is necessary
+                changed = False
+
                 # iterate through the tiles and remove the tile that matches the given grid position
                 for i, tile in enumerate(tiles):
                     if tile[2] == loc:
                         tiles.pop(i)
+                        changed = True
 
-                # redraw the chunk surf to update it
-                self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+                # redraw the chunk surf to update it if the chunk changed
+                if changed:
+                    self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def addDecor(self, layer, decordata, sheets, sheetCnfg):
         # unpack the decordata
@@ -262,8 +267,37 @@ class Chonky:
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
     def removeDecor(self, layer, loc, sheets, sheetCnfg):
-        pass
+        # find the current chunk
+        chunkID = self.getChunkID(loc, tile=False)
+        if chunkID in self.chunks:
 
+            # store a boolean of whether or not the chunk has changed in order to see if re caching the chunk is necessary
+            changed = False
+
+            # get the list of decor in the selected layer
+            decors = self.chunks[chunkID]['decor'][layer]
+            for i, decor in enumerate(decors):
+                # make a decor rect fro mthe stored decor data
+                decorRect = decor[2][0], decor[2][1], decor[3][2], decor[3][3] 
+
+                # since the decorRect is relative to the current chunk, make the location relative to the current chunk
+                loc = [loc[0] - (loc[0] // self.CHUNKPX), loc[1] - (loc[1] // self.CHUNKPX)]
+
+                # normalize negative values
+                if loc[0] < 0:
+                    loc[0] = self.CHUNKPX + loc[0]
+                if loc[1] < 0:
+                    loc[1] = self.CHUNKPX + loc[1]
+
+                # check if the point is inside of the decor rect
+                if pygame.Rect(decorRect).collidepoint(loc):
+                    decors.pop(i)
+                    changed = True
+
+            # redraw the chunk surf to update it if the chunk changed
+            if changed:
+                self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+            
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         # get the tiles in the chunk
         layers = self.chunks[chunkID]['tiles'].copy()

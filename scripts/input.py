@@ -141,8 +141,12 @@ class Input:
                 sheetCnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
             # removing decor
-            elif self.currentToolType == 'draw' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
-                pass
+            elif self.currentToolType == 'erase' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
+                layer = self.currentDecorationLayer
+                loc = self.penPosition
+                sheets = self.editor.window.toolbar.sheets.sheets
+                sheetCnfg = self.editor.window.toolbar.sheets.config
+                self.editor.chunks.removeDecor(layer, loc, sheets, sheetCnfg)
 
 
         # update the selected sheet name
