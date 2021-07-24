@@ -16,6 +16,13 @@ class Clock:
         self.lastTime = time.time()
 
     @property
+    def fps(self):
+        try:
+            return int(1 / (self.dt / self.fpsPace))
+        except:
+            return 0
+
+    @property
     def runTime(self):
         return max(0, time.time() - self.startTime)
 

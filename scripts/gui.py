@@ -31,6 +31,7 @@ class GUI:
         # render the text
         xRender = self.window.window.get_width() * .2 + 2
         yRender = 2
+        yRender += self.font.render(self.window.window, str(self.window.editor.clock.fps), (xRender, yRender))[1]
         yRender += self.font.render(self.window.window, assetText, (xRender, yRender))[1]
         yRender += self.font.render(self.window.window, layerText, (xRender, yRender))[1]
         yRender += self.font.render(self.window.window, penText, (xRender, yRender))[1]
