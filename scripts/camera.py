@@ -58,11 +58,11 @@ class Camera:
         # render the chunks
         chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect, self.scroll)
         for chunk in chunkInfo:
-            bgsurf = chunk[0]
-            fgsurf = chunk[1]
-            x, y = chunk[2]
-            self.camera.blit(bgsurf, (x - self.scroll[0], y - self.scroll[1]))
-            self.camera.blit(fgsurf, (x - self.scroll[0], y - self.scroll[1]))
+            chunkx, chunky = chunk['chunkpos']
+            for sub in chunk['bg subs']:
+                self.camera.blit(chunk['bg img'], (chunkx + sub.x - self.scroll[0], chunky + sub.y - self.scroll[1]), sub)
+            for sub in chunk['fg subs']:
+                self.camera.blit(chunk['fg img'], (chunkx + sub.x - self.scroll[0], chunky + sub.y - self.scroll[1]), sub)
 
         # render the current tile
         if self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw' and self.window.editor.input.currentAssetType == 'tiles':

@@ -47,7 +47,13 @@ class Chonky:
         # iterate through the visible chunks
         for chunk in chunks:
             chunkx, chunky = self.deStringifyID(chunk)
-            data = self.chunks[chunk]['imgs']['bg'], self.chunks[chunk]['imgs']['fg'], (chunkx * self.CHUNKPX - self.CACHEIMGPADDING, chunky * self.CHUNKPX - self.CACHEIMGPADDING)
+            data = {
+                'chunkpos':(chunkx * self.CHUNKPX - self.CACHEIMGPADDING, chunky * self.CHUNKPX - self.CACHEIMGPADDING), 
+                'bg img':self.chunks[chunk]['imgs']['bg']['img'], 
+                'fg img':self.chunks[chunk]['imgs']['fg']['img'],
+                'bg subs':self.chunks[chunk]['imgs']['bg']['subs'],
+                'fg subs':self.chunks[chunk]['imgs']['fg']['subs']
+                }
             tileSurfs.append(data)
 
         return tileSurfs
@@ -97,8 +103,14 @@ class Chonky:
                 'fg':[]
             },
             'imgs':{
-                'bg':None,
-                'fg':None
+                'bg':{
+                    'img':None,
+                    'subs':[]
+                },
+                'fg':{
+                    'img':None,
+                    'subs':[]
+                }
             }
         }
 
@@ -445,8 +457,17 @@ class Chonky:
             bgsurf.blit(subsurface, (decorX + self.CACHEIMGPADDING, decorY + self.CACHEIMGPADDING))
 
         # cache each surf
-        self.chunks[chunkID]['imgs']['fg'] = fgsurf.copy()
-        self.chunks[chunkID]['imgs']['bg'] = bgsurf.copy()
+        self.chunks[chunkID]['imgs']['fg']['img'] = fgsurf.copy()
+        self.chunks[chunkID]['imgs']['bg']['img'] = bgsurf.copy()
+
+        # store the sub surface rects for each chunk using masks
+        fgmask = pygame.mask.from_surface(fgsurf)
+        fgsubs = fgmask.get_bounding_rects()
+        bgmask = pygame.mask.from_surface(bgsurf)
+        bgsubs = bgmask.get_bounding_rects()
+
+        self.chunks[chunkID]['imgs']['fg']['subs'] = fgsubs
+        self.chunks[chunkID]['imgs']['bg']['subs'] = bgsubs
 
     def addLayer(self, chunkID, layer):
         # just add a new layer in the dictionary of layers
