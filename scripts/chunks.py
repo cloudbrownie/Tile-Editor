@@ -39,7 +39,8 @@ class Chonky:
 
         # iterate through the visible chunks
         for chunk in chunks:
-            data = self.chunks[str(chunk)]['imgs']['fg'], (chunk[0] * self.CHUNKPX, chunk[1] * self.CHUNKPX)
+            chunkx, chunky = self.deStringifyID(chunk)
+            data = self.chunks[str(chunk)]['imgs']['fg'], (chunkx * self.CHUNKPX, chunky * self.CHUNKPX)
             tileSurfs.append(data)
 
         return tileSurfs
@@ -60,16 +61,23 @@ class Chonky:
                 chunky = j + int(math.ceil(scroll[1] / (self.CHUNKPX)))
 
                 # stringify the chunk id
-                chunkID = f'({chunkx}, {chunky})'
+                chunkID = self.stringifyID(chunkx, chunky)
 
                 # skip the chunk id if it doesnt exist
                 if chunkID not in self.chunks:
                     continue
 
                 # append this new id
-                chunks.append((chunkx, chunky))
+                chunks.append(self.stringifyID(chunkx, chunky))
 
         return chunks
+
+    def deStringifyID(self, id):
+        listified = id.split(';')
+        return int(listified[0]), int(listified[1])
+
+    def stringifyID(self, chunkx, chunky):
+        return f'{chunkx};{chunky}'
 
     def addChunk(self, chunkID):
         # add a new chunk and fill it with the default info
@@ -98,7 +106,7 @@ class Chonky:
             x = int(x // (self.CHUNKPX))
             y = int(y // (self.CHUNKPX))
         if string:
-            return f'({x}, {y})'
+            return self.stringifyID(x, y)
         else:
             return x, y
 
@@ -172,29 +180,13 @@ class Chonky:
                 if changed:
                     self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
-    def addDecor(self, layer, decordata, sheets, sheetCnfg):
-        # unpack the decordata
-        sheet, sheetLoc, loc = decordata
-        sheetrow, sheetcol = sheetLoc
+    def findSpillChunks(self, chunk, size, loc):
+        # unpack chunkx and chunky
+        chunkx, chunky = chunk
 
-        # grab a copy of the decoration surface
-        decorSurf = sheets[sheet][0][sheetrow][sheetcol].copy()
+        # unpack the size
+        width, height = size
 
-        # grab the dimensions of the decoration surface
-        width, height = decorSurf.get_size()
-
-        # find the string chunk id
-        chunkx, chunky = self.getChunkID(loc, tile=False, string=False)
-        stringifiedChunkID = f'({chunkx}, {chunky})'
-        
-        # find the relative blit location of the decor
-        blitx = loc[0] - chunkx * self.CHUNKPX
-        blity = loc[1] - chunky * self.CHUNKPX
-
-        # add the original chunk if the original chunk doesn't exist
-        if stringifiedChunkID not in self.chunks:
-            self.addChunk(stringifiedChunkID)
-        
         # find the horizontal and vertical spill over
         horizontalSpillOver = max(width - (chunkx * self.CHUNKPX + self.CHUNKPX - loc[0]), 0)
         verticalSpillOver = max(height - (chunky * self.CHUNKPX + self.CHUNKPX - loc[1]), 0)
@@ -221,10 +213,44 @@ class Chonky:
                 bottomChunks.append(newChunk)
         # merge the chunk lists
         spillOverChunks = rightChunks + bottomChunks
+
+        return spillOverChunks
+
+    def addDecor(self, layer, decordata, sheets, sheetCnfg):
+        # unpack the decordata
+        sheet, sheetLoc, loc = decordata
+        sheetrow, sheetcol = sheetLoc
+
+        print(loc)
+
+        # grab a copy of the decoration surface
+        decorSurf = sheets[sheet][0][sheetrow][sheetcol].copy()
+
+        # grab the dimensions of the decoration surface
+        width, height = decorSurf.get_size()
+
+        # find the string chunk id
+        chunkx, chunky = self.getChunkID(loc, tile=False, string=False)
+        stringifiedChunkID = self.stringifyID(chunkx, chunky)
+        
+        # find the relative blit location of the decor
+        blitx = loc[0] - chunkx * self.CHUNKPX
+        blity = loc[1] - chunky * self.CHUNKPX
+
+        # add the original chunk if the original chunk doesn't exist
+        if stringifiedChunkID not in self.chunks:
+            self.addChunk(stringifiedChunkID)
+        
+        spillOverChunks = self.findSpillChunks((chunkx, chunky), (width, height), loc)
+
         # create the new chunks if they don't exist
         for chunk in spillOverChunks:
-            if str(chunk) not in self.chunks:
-                self.addChunk(str(chunk))
+            chunkStr = self.stringifyID(chunk[0], chunk[1])
+            if chunkStr not in self.chunks:
+                self.addChunk(chunkStr)
+
+        horizontalSpillOver = max(width - (chunkx * self.CHUNKPX + self.CHUNKPX - loc[0]), 0)
+        verticalSpillOver = max(height - (chunky * self.CHUNKPX + self.CHUNKPX - loc[1]), 0)
 
         # for each chunk, find the subsurface coordinates needed to properly cut out the decoration for the chunk; init the info dict with the current chunk's info
         infoPerChunk = {
@@ -252,7 +278,7 @@ class Chonky:
             decorClipRect.y = decorClipRect.y - loc[1]
 
             if decorClipRect.x >= 0 and decorClipRect.y >= 0:
-                infoPerChunk[f'({spillChunkx}, {spillChunky})'] = [(relativeBlitx, relativeBlity), (decorClipRect.x, decorClipRect.y, decorClipRect.w, decorClipRect.h)]
+                infoPerChunk[self.stringifyID(spillChunkx, spillChunky)] = [(relativeBlitx, relativeBlity), (decorClipRect.x, decorClipRect.y, decorClipRect.w, decorClipRect.h)]
 
         # for each chunk, add the decoration to the chunk's appropriate layer in the decoration dict
         for chunk in infoPerChunk:
@@ -278,25 +304,68 @@ class Chonky:
             decors = self.chunks[chunkID]['decor'][layer]
             for i, decor in enumerate(decors):
                 # make a decor rect fro mthe stored decor data
-                decorRect = decor[2][0], decor[2][1], decor[3][2], decor[3][3] 
+                decorRect = pygame.Rect(decor[2][0], decor[2][1], decor[3][2], decor[3][3])
 
                 # since the decorRect is relative to the current chunk, make the location relative to the current chunk
-                loc = [loc[0] - (loc[0] // self.CHUNKPX), loc[1] - (loc[1] // self.CHUNKPX)]
+                relativeLoc = [loc[0] - (loc[0] // self.CHUNKPX), loc[1] - (loc[1] // self.CHUNKPX)]
 
                 # normalize negative values
-                if loc[0] < 0:
-                    loc[0] = self.CHUNKPX + loc[0]
-                if loc[1] < 0:
-                    loc[1] = self.CHUNKPX + loc[1]
+                if relativeLoc[0] < 0:
+                    relativeLoc[0] = self.CHUNKPX + relativeLoc[0]
+                if relativeLoc[1] < 0:
+                    relativeLoc[1] = self.CHUNKPX + relativeLoc[1]
 
                 # check if the point is inside of the decor rect
-                if pygame.Rect(decorRect).collidepoint(loc):
+                if decorRect.collidepoint(relativeLoc):
                     decors.pop(i)
-                    changed = True
 
-            # redraw the chunk surf to update it if the chunk changed
-            if changed:
-                self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+                    # get the decor asset and compare sizes to check if this decor is a spill fragment
+                    sheetID = decor[0]
+                    assetLoc = decor[1]
+                    width, height = sheets[self.sheetReferences[sheetID]][0][assetLoc[0]][assetLoc[1]].get_size()
+                    # check if the size is bigger somewhere, if so than this is a spill fragment
+                    if width > decorRect.w or height > decorRect.h:
+                        # find the chunks where the other fragments would be
+                        otherChunks = []
+                        currentChunkx, currentChunky = self.getChunkID(loc, tile=False, string=False)
+                        originalTopLeft = currentChunkx * self.CHUNKPX + decor[2][0] - decor[3][0], currentChunky * self.CHUNKPX + decor[2][1] - decor[3][1]
+                        originalChunk = self.getChunkID(originalTopLeft, tile=False, string=False)
+                        
+                        # use method to find the spill chunks of each fragment
+                        spillOverChunks = self.findSpillChunks(originalChunk, (width, height), originalTopLeft)
+                        
+                        # find the size of each fragment for each chunk
+                        for spillChunk in spillOverChunks:
+                            spillChunkx, spillChunky = spillChunk
+
+                            # create rects to find the correct rects for the decor through clipping
+                            chunkRect = pygame.Rect(spillChunkx * self.CHUNKPX, spillChunky * self.CHUNKPX, self.CHUNKPX, self.CHUNKPX)
+                            chunkRect.normalize()
+                            decorRect = pygame.Rect(originalTopLeft[0], originalTopLeft[1], width, height)
+
+                            decorClipRect = chunkRect.clip(decorRect)
+                            
+                            # use this clip to find the relative blit location
+                            relativeBlitx = decorClipRect.x - spillChunkx * self.CHUNKPX
+                            relativeBlity = decorClipRect.y - spillChunky * self.CHUNKPX
+
+                            # normalize the clipped rect
+                            decorClipRect.normalize()
+
+                            # make the topleft coord of the rect relative to the actual decor for the subsurface
+                            decorClipRect.x = decorClipRect.x - originalTopLeft[0]
+                            decorClipRect.y = decorClipRect.y - originalTopLeft[1]
+
+                            # remove the decor in this chunk with this exact placement info
+                            currentChunkID = self.stringifyID(spillChunkx, spillChunky)
+                            for i, chunkDecor in enumerate(self.chunks[currentChunkID]['decor'][layer]):
+                                if chunkDecor[2] == (relativeBlitx, relativeBlity) and chunkDecor[3] == (decorClipRect.x, decorClipRect.y, decorClipRect.w, decorClipRect.h):
+                                    self.chunks[currentChunkID]['decor'][layer].pop(i)
+
+                            # recache the surface for the spill chunk
+                            self.cacheChunkSurf(self.stringifyID(spillChunkx, spillChunky), sheets, sheetCnfg)
+
+                    self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
             
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         # get the tiles in the chunk
