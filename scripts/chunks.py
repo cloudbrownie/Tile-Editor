@@ -14,12 +14,19 @@ class Chonky:
         self.TILESIZE = 16
         self.CHUNKSIZE = 8
         self.CHUNKPX = self.TILESIZE * self.CHUNKSIZE
-        self.chunks = {}
+        self.CACHEIMGPADDING = 3
+        self.CACHEIMGSIZE = self.CHUNKPX + self.CACHEIMGPADDING * 2, self.CHUNKPX + self.CACHEIMGPADDING * 2
+        self.chunks = {
+
+        }
 
         self.sheetReferences = {
 
         }
         self.sheetID = 0
+
+        # for future use of implementing a way to undo certain things
+        self.lastAction = {}
 
     @property
     def currentChunks(self):
@@ -40,7 +47,7 @@ class Chonky:
         # iterate through the visible chunks
         for chunk in chunks:
             chunkx, chunky = self.deStringifyID(chunk)
-            data = self.chunks[str(chunk)]['imgs']['fg'], (chunkx * self.CHUNKPX, chunky * self.CHUNKPX)
+            data = self.chunks[chunk]['imgs']['bg'], self.chunks[chunk]['imgs']['fg'], (chunkx * self.CHUNKPX - self.CACHEIMGPADDING, chunky * self.CHUNKPX - self.CACHEIMGPADDING)
             tileSurfs.append(data)
 
         return tileSurfs
@@ -110,8 +117,31 @@ class Chonky:
         else:
             return x, y
 
-    def getTile(self):
-        return
+    def getTiles(self, loc):
+        # used to get tiles through multiple layers if all tiles are in the same spot
+        tiles = []
+        for layer in self.chunks[self.getChunkID(loc)]['tiles']:
+            for tile in layer:
+                if tile[2] == self.getTileLocation(loc):
+                    tiles.append(tile)
+        return tiles
+
+    def getTileInLayer(self, loc, layer):
+        # used to get a single tile in a given layer
+        for tile in self.chunks[self.getChunkID(loc)]['tiles'][layer]:
+            if tile[2] == self.getTileLocation(loc):
+                return tile
+                    
+    def getTileLocation(self, loc):
+        # loc is not chunk relative
+        tilex, tiley = loc
+        tilex %= self.CHUNKSIZE
+        tiley %= self.CHUNKSIZE
+        if tilex < 0:
+            tilex = self.CHUNKSIZE + tilex
+        if tiley < 0:
+            tiley = self.CHUNKSIZE + tiley
+        return tilex, tiley
 
     def addTile(self, layer, tiledata, sheets, sheetCnfg):
         # unpack the tile data
@@ -123,13 +153,7 @@ class Chonky:
             self.addChunk(chunkID)
 
         # fix the relative chunk position
-        tilex, tiley = loc
-        tilex %= self.CHUNKSIZE
-        tiley %= self.CHUNKSIZE
-        if tilex < 0:
-            tilex = self.CHUNKSIZE + tilex
-        if tiley < 0:
-            tiley = self.CHUNKSIZE + tiley
+        tilex, tiley = self.getTileLocation(loc)
 
         # create the layer if the layer does not exist
         if layer not in self.chunks[chunkID]['tiles']:
@@ -221,8 +245,6 @@ class Chonky:
         sheet, sheetLoc, loc = decordata
         sheetrow, sheetcol = sheetLoc
 
-        print(loc)
-
         # grab a copy of the decoration surface
         decorSurf = sheets[sheet][0][sheetrow][sheetcol].copy()
 
@@ -232,7 +254,7 @@ class Chonky:
         # find the string chunk id
         chunkx, chunky = self.getChunkID(loc, tile=False, string=False)
         stringifiedChunkID = self.stringifyID(chunkx, chunky)
-        
+
         # find the relative blit location of the decor
         blitx = loc[0] - chunkx * self.CHUNKPX
         blity = loc[1] - chunky * self.CHUNKPX
@@ -240,7 +262,7 @@ class Chonky:
         # add the original chunk if the original chunk doesn't exist
         if stringifiedChunkID not in self.chunks:
             self.addChunk(stringifiedChunkID)
-        
+
         spillOverChunks = self.findSpillChunks((chunkx, chunky), (width, height), loc)
 
         # create the new chunks if they don't exist
@@ -265,7 +287,7 @@ class Chonky:
             decorRect = pygame.Rect(loc[0], loc[1], width, height)
 
             decorClipRect = chunkRect.clip(decorRect)
-            
+
             # use this clip to find the relative blit location
             relativeBlitx = decorClipRect.x - spillChunkx * self.CHUNKPX
             relativeBlity = decorClipRect.y - spillChunky * self.CHUNKPX
@@ -297,17 +319,16 @@ class Chonky:
         chunkID = self.getChunkID(loc, tile=False)
         if chunkID in self.chunks:
 
-            # store a boolean of whether or not the chunk has changed in order to see if re caching the chunk is necessary
-            changed = False
-
-            # get the list of decor in the selected layer
+            # get the list of decor in the selected layer 
             decors = self.chunks[chunkID]['decor'][layer]
             for i, decor in enumerate(decors):
                 # make a decor rect fro mthe stored decor data
                 decorRect = pygame.Rect(decor[2][0], decor[2][1], decor[3][2], decor[3][3])
 
+                chunkx, chunky = self.deStringifyID(chunkID)
+
                 # since the decorRect is relative to the current chunk, make the location relative to the current chunk
-                relativeLoc = [loc[0] - (loc[0] // self.CHUNKPX), loc[1] - (loc[1] // self.CHUNKPX)]
+                relativeLoc = [loc[0] - chunkx * self.CHUNKPX, loc[1] - chunky * self.CHUNKPX]
 
                 # normalize negative values
                 if relativeLoc[0] < 0:
@@ -330,10 +351,10 @@ class Chonky:
                         currentChunkx, currentChunky = self.getChunkID(loc, tile=False, string=False)
                         originalTopLeft = currentChunkx * self.CHUNKPX + decor[2][0] - decor[3][0], currentChunky * self.CHUNKPX + decor[2][1] - decor[3][1]
                         originalChunk = self.getChunkID(originalTopLeft, tile=False, string=False)
-                        
+
                         # use method to find the spill chunks of each fragment
                         spillOverChunks = self.findSpillChunks(originalChunk, (width, height), originalTopLeft)
-                        
+
                         # find the size of each fragment for each chunk
                         for spillChunk in spillOverChunks:
                             spillChunkx, spillChunky = spillChunk
@@ -344,7 +365,7 @@ class Chonky:
                             decorRect = pygame.Rect(originalTopLeft[0], originalTopLeft[1], width, height)
 
                             decorClipRect = chunkRect.clip(decorRect)
-                            
+
                             # use this clip to find the relative blit location
                             relativeBlitx = decorClipRect.x - spillChunkx * self.CHUNKPX
                             relativeBlity = decorClipRect.y - spillChunky * self.CHUNKPX
@@ -366,7 +387,7 @@ class Chonky:
                             self.cacheChunkSurf(self.stringifyID(spillChunkx, spillChunky), sheets, sheetCnfg)
 
                     self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
-            
+
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         # get the tiles in the chunk
         layers = self.chunks[chunkID]['tiles'].copy()
@@ -382,7 +403,7 @@ class Chonky:
         fg = self.chunks[chunkID]['decor']['fg']
 
         # create a transparent surface for the tiles and fg decor
-        fgsurf = pygame.Surface((self.CHUNKPX, self.CHUNKPX))
+        fgsurf = pygame.Surface(self.CACHEIMGSIZE)
         fgsurf.set_colorkey((0, 0, 0))
 
         # blit each tile and apply the configuration if it exists
@@ -395,11 +416,11 @@ class Chonky:
                 tileY *= self.TILESIZE
                 if tile[0] in sheetCnfg:
                     offx, offy = sheetCnfg[tile[0]][imgRow][imgCol]
-                    fgsurf.blit(img, (tileX + offx, tileY + offy))
+                    fgsurf.blit(img, (tileX + offx + self.CACHEIMGPADDING, tileY + offy + self.CACHEIMGPADDING))
                 else:
-                    fgsurf.blit(img, (tileX, tileY))
+                    fgsurf.blit(img, (tileX + self.CACHEIMGPADDING, tileY + self.CACHEIMGPADDING))
 
-        # blit each fg decor 
+        # blit each fg decor
         for decor in self.chunks[chunkID]['decor']['fg']:
             imgRow, imgCol = decor[1]
             img = sheets[self.sheetReferences[decor[0]]][0][imgRow][imgCol].copy()
@@ -407,10 +428,10 @@ class Chonky:
             x, y, w, h = decor[3]
             subsurfRect = pygame.Rect(x, y, w, h)
             subsurface = img.subsurface(subsurfRect)
-            fgsurf.blit(subsurface, (decorX, decorY))
+            fgsurf.blit(subsurface, (decorX + self.CACHEIMGPADDING, decorY + self.CACHEIMGPADDING))
 
         # create a transparent surface for the bg decor
-        bgsurf = pygame.Surface((self.CHUNKPX, self.CHUNKPX))
+        bgsurf = pygame.Surface(self.CACHEIMGSIZE)
         bgsurf.set_colorkey((0, 0, 0))
 
         # blit each bg decor
@@ -421,7 +442,7 @@ class Chonky:
             x, y, w, h = decor[3]
             subsurfRect = pygame.Rect(x, y, w, h)
             subsurface = img.subsurface(subsurfRect).copy()
-            bgsurf.blit(subsurface, (decorX, decorY))
+            bgsurf.blit(subsurface, (decorX + self.CACHEIMGPADDING, decorY + self.CACHEIMGPADDING))
 
         # cache each surf
         self.chunks[chunkID]['imgs']['fg'] = fgsurf.copy()
@@ -447,11 +468,17 @@ class Chonky:
         id = self.getSheetID(sheetname)
         return id
 
-    def autoTile(self):
+    def autoTile(self, layer, loc, sheets, sheetCnfg, area):
         pass
 
-    def flood(self):
-        pass
+    def flood(self, layer, loc, sheets, sheetCnfg, area=None):
+        # only flood fill in the given area if the area is given
+        if area:
+            pass
+
+        # fill normally 
+        else:
+            pass
 
     '''
     used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons

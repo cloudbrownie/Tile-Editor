@@ -11,7 +11,7 @@ class Input:
         self.mouseposition = 0, 0
         self.TILESIZE = self.editor.chunks.TILESIZE
 
-        self.penToolTypes = ['draw', 'erase']
+        self.penToolTypes = ['draw', 'erase', 'select']
         self.penToolIndex = 0
 
         self.assetTypes = ['tiles', 'decorations']
@@ -23,6 +23,13 @@ class Input:
         self.decoLayers = ['Background', 'Foreground']
         self.decoLayerIndex = 0
 
+        self.selectionBox = {
+            '1':None,
+            '2':None
+        }
+        self.MINIMUMSBOXAREA = self.editor.chunks.TILESIZE ** 2
+        self.SELECTIONBOXCOLOR = 255, 255, 255
+
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
     @property
@@ -33,6 +40,12 @@ class Input:
             return int(mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]), int(my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1])
         elif self.currentAssetType == 'tiles':
             return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE
+
+    @property
+    def exactPosition(self):
+        mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
+        my = self.mouseposition[1] * self.editor.window.camera.ratio[1]
+        return int(mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]), int(my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1])
 
     @property
     def currentToolType(self):
@@ -48,6 +61,33 @@ class Input:
             return 'fg'
         elif self.decoLayerIndex == 1:
             return 'bg'
+
+    def resetSBox(self):
+        self.selectionBox = {
+            '1':None,
+            '2':None
+        }
+
+    def normalizeSBox(self):
+        # normalize the coordinates easily using pygame's built in rect normalize function
+        if self.selectionBox['1'] and self.selectionBox['2']:
+            x1, y1 = self.selectionBox['1']
+            x2, y2 = self.selectionBox['2']
+            rect = pygame.Rect(x1, y1, x2 - x1, y2 - y1)
+            rect.normalize()
+            self.selectionBox['1'] = rect.topleft
+            self.selectionBox['2'] = rect.bottomright
+            return True
+        return False
+
+    def getSBoxArea(self):
+        if self.normalizeSBox():
+            return (self.selectionBox['2'][0] - self.selectionBox['1'][0]) * (self.selectionBox['2'][1] - self.selectionBox['1'][1])
+        return 0
+
+    @property
+    def validSBox(self):
+        return self.getSBoxArea() > self.MINIMUMSBOXAREA
 
     def update(self):
         # get the mouse position
@@ -73,8 +113,14 @@ class Input:
                         self.editor.window.toolbar.selectSheet(self.cursor, lock=True)
                     elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.divider.centery:
                         self.editor.window.toolbar.selectTile(self.mouseposition, lock=True)
-                    elif self.mouseposition[0] > self.editor.window.toolbar.width:
+                    elif self.mouseposition[0] > self.editor.window.toolbar.width and self.currentToolType != 'select':
                         self.holding = True
+                    elif self.mouseposition[0] > self.editor.window.toolbar.width and self.currentToolType == 'select':
+                        if not self.selectionBox['1']:
+                            self.selectionBox['1'] = self.exactPosition
+                        elif self.selectionBox['1']:
+                            self.resetSBox()
+                            self.selectionBox['1'] = self.exactPosition
 
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
@@ -83,16 +129,22 @@ class Input:
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     self.holding = False
+                    if self.mouseposition[0] > self.editor.window.toolbar.width and self.currentToolType == 'select' and self.selectionBox['1']:
+                        self.selectionBox['2'] = self.exactPosition
 
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(False)
 
             elif event.type == pygame.KEYDOWN:
+                # changing pen tools
                 if event.key == pygame.K_1:
                     self.penToolIndex = 0
                 elif event.key == pygame.K_2:
                     self.penToolIndex = 1
+                elif event.key == pygame.K_3:
+                    self.penToolIndex = 2
+                # changing layers
                 elif event.key == pygame.K_EQUALS:
                     if self.currentAssetType == 'tiles':
                         self.currentLayer += 1
@@ -103,12 +155,19 @@ class Input:
                         self.currentLayer -= 1
                     elif self.currentAssetType == 'decorations':
                         self.decoLayerIndex = (self.decoLayerIndex - 1) % len(self.decoLayers)
+                # quit event
                 elif event.key == pygame.K_ESCAPE:
                     self.editor.stop()
+                # saving
                 elif event.key == pygame.K_s:
                     self.save()
+                # changing between tiles and decorations
                 elif event.key == pygame.K_w:
                     self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)
+                # auto tiling 
+                elif event.key == pygame.K_a:
+                    if self.currentAssetType == 'tiles' and self.currentToolType == 'select':
+                        self.editor.chunks.autoTile()
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
@@ -148,6 +207,9 @@ class Input:
                 sheetCnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.removeDecor(layer, loc, sheets, sheetCnfg)
 
+        # when selecting, if the selection box area is too small, just destroy the selection box
+        if self.selectionBox['1'] and self.selectionBox['2'] and (not self.validSBox or self.currentToolType != 'select'):
+            self.resetSBox()
 
         # update the selected sheet name
         self.editor.window.toolbar.selectSheet(self.cursor)

@@ -30,6 +30,9 @@ class Camera:
     def moveScroll(self, values):
         pass
 
+    def applyScroll(self, values):
+        return [(value[0] - self.scroll[0], value[1] - self.scroll[1]) for value in values]
+
     def adjustZoom(self, value):
         currentIndex = self.zIndex
         self.zIndex += value
@@ -55,9 +58,11 @@ class Camera:
         # render the chunks
         chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect, self.scroll)
         for chunk in chunkInfo:
-            surf = chunk[0]
-            x, y = chunk[1]
-            self.camera.blit(surf, (x - self.scroll[0], y - self.scroll[1]))
+            bgsurf = chunk[0]
+            fgsurf = chunk[1]
+            x, y = chunk[2]
+            self.camera.blit(bgsurf, (x - self.scroll[0], y - self.scroll[1]))
+            self.camera.blit(fgsurf, (x - self.scroll[0], y - self.scroll[1]))
 
         # render the current tile
         if self.window.toolbar.tileLock and self.window.editor.input.currentToolType == 'draw' and self.window.editor.input.currentAssetType == 'tiles':
@@ -80,6 +85,32 @@ class Camera:
         # lines to indicate the origin
         pygame.draw.line(self.camera, (202, 210, 197), (0 - self.scroll[0], self.originCross // 2 - self.scroll[1]), (0 - self.scroll[0], -self.originCross // 2 - self.scroll[1]), self.scale)
         pygame.draw.line(self.camera, (202, 210, 197), (self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), (-self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), self.scale)
+
+        # draw the input class's selection box
+        if self.window.editor.input.validSBox:
+            color = self.window.editor.input.SELECTIONBOXCOLOR
+            topleft = list(self.window.editor.input.selectionBox['1'])
+            bottomright = list(self.window.editor.input.selectionBox['2'])
+            topright = [bottomright[0], topleft[1]]
+            bottomleft = [topleft[0], bottomright[1]]
+            tl, br, tr, bl = self.applyScroll((topleft, bottomright, topright, bottomleft))
+            # just draw lines instead of drawing a rect with a linewidth
+            pygame.draw.line(self.camera, color, tl, tr, self.scale)
+            pygame.draw.line(self.camera, color, tr, br, self.scale)
+            pygame.draw.line(self.camera, color, br, bl, self.scale)
+            pygame.draw.line(self.camera, color, bl, tl, self.scale)
+        elif self.window.editor.input.selectionBox['1'] and not self.window.editor.input.selectionBox['2']:
+            color = self.window.editor.input.SELECTIONBOXCOLOR
+            topleft = list(self.window.editor.input.selectionBox['1'])
+            bottomright = self.window.editor.input.exactPosition
+            topright = [bottomright[0], topleft[1]]
+            bottomleft = [topleft[0], bottomright[1]]
+            tl, br, tr, bl = self.applyScroll((topleft, bottomright, topright, bottomleft))
+            # just draw lines instead of drawing a rect with a linewidth
+            pygame.draw.line(self.camera, color, tl, tr, self.scale)
+            pygame.draw.line(self.camera, color, tr, br, self.scale)
+            pygame.draw.line(self.camera, color, br, bl, self.scale)
+            pygame.draw.line(self.camera, color, bl, tl, self.scale)
 
         # update the camera
         self.display.blit(pygame.transform.scale(self.camera, self.display.get_size()), (0, 0))

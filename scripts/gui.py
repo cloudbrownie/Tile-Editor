@@ -9,30 +9,35 @@ class GUI:
         self.font = Font(self.scale)
 
     def render(self, input):
-        # making the render text
-        renderText = ''
 
         # add on the asset type
-        renderText += f'[W] Current Asset Type: {input.currentAssetType}\n'
+        assetText =  f'[W] Current Asset Type: {input.currentAssetType}'
 
         # add on the layer text
         if input.currentAssetType == 'tiles':
-            renderText += f'[-] Layer {input.currentLayer} [+]\n'
+            layerText = f'[-] Layer {input.currentLayer} [+]'
         elif input.currentAssetType == 'decorations':
-            renderText +=  f'[-] {input.currentDecorationLayer} [+]\n'
+            layerText =  f'[-] {input.currentDecorationLayer} [+]'
 
         # add on the pen position info
-        renderText += f'Pen Position: {input.penPosition}'
+        penText = f'Pen Position: {input.penPosition}'
 
         # add on the current tool text
-        renderText += f'\nCurrent Tool: {input.currentToolType}\n'
+        toolText = f'Current Tool: {input.currentToolType}'
 
         # add on the available tools and their respective shortcut keys
-        renderText += '[1] Draw\n'
-        renderText += '[2] Erase\n'
+        toolKeyText = '[1] Draw\n[2] Erase\n[3] Select'
 
         # render the text
-        self.font.render(self.window.window, renderText, (self.window.window.get_width() * .2 + 2, 2))
+        xRender = self.window.window.get_width() * .2 + 2
+        yRender = 2
+        yRender += self.font.render(self.window.window, assetText, (xRender, yRender))[1]
+        yRender += self.font.render(self.window.window, layerText, (xRender, yRender))[1]
+        yRender += self.font.render(self.window.window, penText, (xRender, yRender))[1]
+        yRender += self.font.render(self.window.window, toolText, (xRender, yRender))[1]
+        yRender += self.font.render(self.window.window, toolKeyText, (xRender, yRender))[1]
+
+
 
         # update the font's cache
         self.font.update()
