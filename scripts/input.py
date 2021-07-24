@@ -20,7 +20,7 @@ class Input:
         self.currentLayer = 0
         self.holding = False
 
-        self.decoLayers = ['Foreground', 'Background']
+        self.decoLayers = ['Background', 'Foreground']
         self.decoLayerIndex = 0
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
