@@ -588,7 +588,14 @@ class Chonky:
         id = self.getSheetID(sheetname)
         return id
 
-    def autoTile(self, layer, loc, sheets, sheetCnfg, rect):
+    def autoTile(self, layer, loc, sheets, sheetCnfg, rect=None):
+        '''
+        used to convert a large amount of tiles into their correct texture based on their neighbors and the configuration set in the sheetcnfg arg.
+        if a rect is given, then this method will auto tile all tiles within the rect.
+        if a rect is not given, then this method will attempt to auto tile the tile that the location corresponds to, and all other connected tiles of this tile.
+        loc arg should be given as a non chunk relative tile location.
+        returns none.
+        '''
         pass
 
     def flood(self, layer, tiledata, sheets, sheetCnfg, rect, scroll):
@@ -674,3 +681,9 @@ class Chonky:
             else:
                 self.removeChunk(chunk)
         del chunk
+
+    def bulkRemove(self, layer, sheets, sheetCnfg, rect, scroll):
+        '''
+        
+        '''
+        pass
