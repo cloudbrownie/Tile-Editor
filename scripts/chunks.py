@@ -30,6 +30,9 @@ class Chonky:
 
     @property
     def currentChunks(self):
+        '''
+        returns a list of all current chunks in the chunk system
+        '''
         return [chunk for chunk in self.chunks]
 
     def getRenderList(self, rect, scroll):
@@ -561,7 +564,7 @@ class Chonky:
     def getSheetID(self, sheetname):
         '''
         returns the id of a stored sheetname in the chunk's system's sheet reference dictionary.
-        if the sheetname is not in the chunk's system's sheet reference dictionary, it is added to the dictionary with a unique integer id.
+        if the sheetname is not in the chunk's system's sheet reference dictionary, it is added to the dictionary with a unique integer id and the newly created id is returned.
         '''
         # iterate through all ID's and match the current sheetname to an ID referenced name
         for id in self.sheetReferences:
@@ -577,6 +580,11 @@ class Chonky:
         pass
 
     def flood(self, layer, tiledata, sheets, sheetCnfg, rect, scroll):
+        '''
+        given a rect for bounding purposes, fills the entire area with tiles of the same texture as given in the tiledata arg. only fills in the given layer.
+        creates new chunks.
+        needs sheets and sheetcnfg args for caching the images of all affect chunks.
+        '''
         # unpack tile data
         sheetname, sheetLoc, loc = tiledata
 
