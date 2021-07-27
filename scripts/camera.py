@@ -15,9 +15,8 @@ class Camera:
         self.camera = pygame.Surface(self.originalSize)
         self.ratio = self.originalSize[0] / self.display.get_width(), self.originalSize[1] / self.display.get_height()
 
-        self.cameraRect = pygame.Rect((0, 0), self.originalSize)
-
         self.scroll = [-self.camera.get_width() // 2, -self.camera.get_height() // 2]
+        self.cameraRect = pygame.Rect(self.scroll, self.originalSize)
         self.scrolling = False
         self.zoomValues = [.25, .5, 1, 2, 4]
         self.zIndex = 2

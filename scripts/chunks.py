@@ -32,14 +32,14 @@ class Chonky:
     def currentChunks(self):
         return [chunk for chunk in self.chunks]
 
-    """
-    used by the rendering class to render the bg, tiles, and foreground.
-    rendering class handles this stuff rather than the chunk class since the player images in-game
-        will be between the bg and the tile layer
-    """
-    def getRenderList(self, camRect, scroll):
+    def getRenderList(self, rect, scroll):
+        '''
+        used by the rendering class to render the bg, tiles, and foreground.
+        rendering class handles this stuff rather than the chunk class since the player images in-game will be between the bg and the tile layer
+        returns a dictionary with blit information
+        '''
         # get the visible chunks
-        chunks = self.getVisibleChunks(camRect, scroll)
+        chunks = self.getVisibleChunks(rect, scroll)
 
         # store all tile surfs and their blit location
         tileSurfs = []
@@ -58,26 +58,29 @@ class Chonky:
 
         return tileSurfs
 
-    def getVisibleChunks(self, camRect, scroll):
+    def getVisibleChunks(self, rect, scroll, keepAllChunks=False):
+        '''
+        returns all chunks within the specified rect and scroll. can ignore chunks that don't already exist
+        '''
         # start a list of chunks to return
         chunks = []
         # calculate the amount of horizontal and vertical chunks
-        horizontalChunks = int(math.ceil(camRect.w / (self.CHUNKPX)))
-        verticalChunks = int(math.ceil(camRect.h / (self.CHUNKPX)))
+        horizontalChunks = int(math.ceil(rect.w / (self.CHUNKPX))) + 1
+        verticalChunks = int(math.ceil(rect.h / (self.CHUNKPX))) + 1
 
         # iterate through the amount of horizontal and vertical chunks
         for i in range(horizontalChunks):
             for j in range(verticalChunks):
 
                 # apply the scroll to the location
-                chunkx = i + int(math.ceil(scroll[0] / (self.CHUNKPX)))
-                chunky = j + int(math.ceil(scroll[1] / (self.CHUNKPX)))
+                chunkx = i + int(math.ceil(scroll[0] / (self.CHUNKPX))) - 1
+                chunky = j + int(math.ceil(scroll[1] / (self.CHUNKPX))) - 1
 
                 # stringify the chunk id
                 chunkID = self.stringifyID(chunkx, chunky)
 
                 # skip the chunk id if it doesnt exist
-                if chunkID not in self.chunks:
+                if chunkID not in self.chunks and not keepAllChunks:
                     continue
 
                 # append this new id
@@ -86,13 +89,32 @@ class Chonky:
         return chunks
 
     def deStringifyID(self, id):
+        '''
+        used to turn a chunk id string into an int tuple of the chunkx and chunky. returns a tuple of chunkx, chunky
+        '''
         listified = id.split(';')
         return int(listified[0]), int(listified[1])
 
     def stringifyID(self, chunkx, chunky):
+        '''
+        used to format a chunk id using the inputted chunkx and chunky. returns a string of the formatted chunk id
+        '''
         return f'{chunkx};{chunky}'
 
+    def validID(self, arg):
+        '''
+        used to convert a tuple chunk format into the string format if not already string format. returns formatted string chunk id
+        '''
+        if isinstance(arg, tuple):
+            return self.stringifyID(arg[0], arg[1])
+        return arg
+
+
     def addChunk(self, chunkID):
+        '''
+        adds a new chunk to the class's chunk variable with the default information. input can be either chunkx and chunky or pre formatted chunk id. returns none
+        '''
+        chunkID = self.validID(chunkID)
         # add a new chunk and fill it with the default info
         self.chunks[chunkID] = {
             'tiles':{
@@ -114,7 +136,17 @@ class Chonky:
             }
         }
 
+    def removeChunk(self, chunkID):
+        '''
+        removes the chunk from the chunk system and deletes it from memory. returns none.
+        '''
+        if chunkID in self.chunks:
+            del self.chunks[chunkID]
+
     def getChunkID(self, location, tile=True, string=True):
+        '''
+        intakes a location which is specified to be either a tile position or an exact position and returns the chunk id as either a string or a tuple of ints, specified by the string arg
+        '''
         # unpack the x, y locations
         x, y = location
         # find the chunk id, different equation if looking for tile's
@@ -130,6 +162,9 @@ class Chonky:
             return x, y
 
     def getTiles(self, loc):
+        '''
+        returns a list of tiles in a certain location but in different layers. loc arg is not chunk relative
+        '''
         # used to get tiles through multiple layers if all tiles are in the same spot
         tiles = []
         for layer in self.chunks[self.getChunkID(loc)]['tiles']:
@@ -139,12 +174,25 @@ class Chonky:
         return tiles
 
     def getTileInLayer(self, loc, layer):
+        '''
+        returns a single tile at a given location and layer. loc arg is not chunk relative
+        '''
         # used to get a single tile in a given layer
         for tile in self.chunks[self.getChunkID(loc)]['tiles'][layer]:
             if tile[2] == self.getTileLocation(loc):
                 return tile
-                    
-    def getTileLocation(self, loc):
+
+    def convertExactToTilePosition(self, loc):
+        '''
+        loc arg is not a tile location and is not a chunk relative position. returns a non chunk relative tile position
+        '''
+        # returned loc will not be chunk relative
+        return loc[0] // self.TILESIZE, loc[1] // self.TILESIZE
+
+    def getRelativeTileLocation(self, loc):
+        '''
+        loc arg is a non chunk relative tile position. returns a chunk relative tile position
+        '''
         # loc is not chunk relative
         tilex, tiley = loc
         tilex %= self.CHUNKSIZE
@@ -155,7 +203,12 @@ class Chonky:
             tiley = self.CHUNKSIZE + tiley
         return tilex, tiley
 
-    def addTile(self, layer, tiledata, sheets, sheetCnfg):
+    def addTile(self, layer, tiledata, sheets, sheetCnfg, flood=False):
+        '''
+        used to add a tile to the chunk system at a certain layer in a chunk. 
+        location of the tile is given in the tile data arg which needs to be formatted as: (sheetname, asset location in sheet, non chunk relative tile position).
+        needs the sheets and sheetcnfg args for chunk img caching, but wont chunk img cache if this method is used while flood filling.
+        '''
         # unpack the tile data
         sheetname, sheetLoc, loc = tiledata
 
@@ -165,7 +218,7 @@ class Chonky:
             self.addChunk(chunkID)
 
         # fix the relative chunk position
-        tilex, tiley = self.getTileLocation(loc)
+        tilex, tiley = self.getRelativeTileLocation(loc)
 
         # create the layer if the layer does not exist
         if layer not in self.chunks[chunkID]['tiles']:
@@ -182,9 +235,15 @@ class Chonky:
         self.chunks[chunkID]['tiles'][layer].append(updatedTileData)
 
         # redraw the cached surface
-        self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+        if not flood:
+            self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
-    def removeTile(self, layer, loc, sheets, sheetCnfg):
+    def removeTile(self, layer, loc, sheets, sheetCnfg, bulk=False):
+        '''
+        used to remove a tile from the chunk system at a certain layer at a certain location.
+        location of the tile is given as a non chunk relative tile position.
+        needs the sheets and sheetcnfg args for chunk img caching, but wont chunk img cache if this method is used while bulk deleting.
+        '''
         # find the current chunk
         chunkID = self.getChunkID(loc)
         if chunkID in self.chunks:
@@ -217,6 +276,10 @@ class Chonky:
                     self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def findSpillChunks(self, chunk, size, loc):
+        '''
+        used to find all chunks that an object collides with, given the original chunk, the size of the object, and the topleft location of the object.
+        returns a list of all collided chunks as tuples of ints.
+        '''
         # unpack chunkx and chunky
         chunkx, chunky = chunk
 
@@ -253,6 +316,11 @@ class Chonky:
         return spillOverChunks
 
     def addDecor(self, layer, decordata, sheets, sheetCnfg):
+        '''
+        used to add a decoration to the chunk system in either the bg or fg in a chunk. 
+        location of the decoration is given in the decoration data arg which needs to be formatted as: (sheetname, asset location in sheet, exact position of the topleft point of the decoration).
+        needs the sheets and sheetcnfg args for chunk img caching.
+        '''
         # unpack the decordata
         sheet, sheetLoc, loc = decordata
         sheetrow, sheetcol = sheetLoc
@@ -327,6 +395,10 @@ class Chonky:
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
     def removeDecor(self, layer, loc, sheets, sheetCnfg):
+        '''
+        removes decorations in either the fg or bg layer in a chunk at the location arg.
+        needs the sheets and sheetcnfg args for chunk img caching.
+        '''
         # find the current chunk
         chunkID = self.getChunkID(loc, tile=False)
         if chunkID in self.chunks:
@@ -401,6 +473,11 @@ class Chonky:
                     self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
+        '''
+        used to cache an img of the fg and bg layers of a chunk and store the bounding rects of sub surfaces of set pixels in the cached image.
+        stores the images in the chunk's data.
+        needs the sheets and sheetcnfg.
+        '''
         # get the tiles in the chunk
         layers = self.chunks[chunkID]['tiles'].copy()
 
@@ -470,6 +547,9 @@ class Chonky:
         self.chunks[chunkID]['imgs']['bg']['subs'] = bgsubs
 
     def addLayer(self, chunkID, layer):
+        '''
+        adds a layer in a chunk's tile data.
+        '''
         # just add a new layer in the dictionary of layers
         self.chunks[chunkID]['tiles'][layer] = []
 
@@ -479,6 +559,10 @@ class Chonky:
         self.sheetReferences[self.sheetID] = sheetname
 
     def getSheetID(self, sheetname):
+        '''
+        returns the id of a stored sheetname in the chunk's system's sheet reference dictionary.
+        if the sheetname is not in the chunk's system's sheet reference dictionary, it is added to the dictionary with a unique integer id.
+        '''
         # iterate through all ID's and match the current sheetname to an ID referenced name
         for id in self.sheetReferences:
             if sheetname == self.sheetReferences[id]:
@@ -489,23 +573,93 @@ class Chonky:
         id = self.getSheetID(sheetname)
         return id
 
-    def autoTile(self, layer, loc, sheets, sheetCnfg, area):
+    def autoTile(self, layer, loc, sheets, sheetCnfg, rect):
         pass
 
-    def flood(self, layer, loc, sheets, sheetCnfg, area=None):
-        # only flood fill in the given area if the area is given
-        if area:
-            pass
+    def flood(self, layer, tiledata, sheets, sheetCnfg, rect, scroll):
+        # unpack tile data
+        sheetname, sheetLoc, loc = tiledata
 
-        # fill normally 
-        else:
-            pass
+        # find the current chunks; can just input loc since the tile loc is in tile mode
+        originalChunk = self.getChunkID(loc)
+        originalTile = self.getRelativeTileLocation(loc)
 
-    '''
-    used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons
-    '''
+        # check if a tile in this position already exists; if it does just return
+        if originalChunk in self.chunks:
+            if layer in self.chunks[originalChunk]['tiles']:
+                for tile in self.chunks[originalChunk]['tiles'][layer]:
+                    if tile[2] == originalTile:
+                        return 
+        
+        # create this chunk if it doesn't exist
+        if originalChunk not in self.chunks:
+            self.addChunk(originalChunk)
+
+        # create the layer if it doesn't exist in this chunk
+        if layer not in self.chunks[originalChunk]['tiles']:
+            self.addLayer(originalChunk, layer)
+
+        # find the bounding tile positions
+        leftBound = self.convertExactToTilePosition(rect.midleft)[0]
+        rightBound = self.convertExactToTilePosition(rect.midright)[0]
+        topBound = self.convertExactToTilePosition(rect.midtop)[1]
+        bottomBound = self.convertExactToTilePosition(rect.midbottom)[1]
+
+        # start the open list and closed list; open list contains the current tile position
+        originalChunk = self.deStringifyID(originalChunk)
+        currentTile = originalTile[0] + originalChunk[0] * self.CHUNKSIZE, originalTile[1] + originalChunk[1] * self.CHUNKSIZE
+        openList = [currentTile]
+        newTiles = []
+        closedList = []
+
+        # find all chunks inside of the rect
+        chunks = self.getVisibleChunks(rect, scroll, keepAllChunks=True)
+
+        # add all existing tiles in the same layer in these chunks if they exist
+        for chunk in chunks:
+            if chunk not in self.chunks:
+                self.addChunk(chunk)
+            if layer in self.chunks[chunk]['tiles']:
+                for tile in self.chunks[chunk]['tiles'][layer]:
+                    currentChunk = self.deStringifyID(chunk)
+                    closedTile = tile[2][0] + currentChunk[0] * self.CHUNKSIZE, tile[2][1] + currentChunk[1] * self.CHUNKSIZE
+                    closedList.append(closedTile)
+        del chunk
+
+        if currentTile not in closedList:
+            newTiles.append(currentTile)
+
+        while len(openList) > 0:
+            # start checking the next available point
+            pos = openList[0]
+            openList.pop(0)
+            # iterate through positions next to the current position in the cardinal directions
+            for x, y in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                newpos = pos[0] + x, pos[1] + y
+                if newpos in closedList or newpos[0] < leftBound or newpos[0] > rightBound or newpos[1] < topBound or newpos[1] > bottomBound:
+                    continue
+                if newpos not in openList:
+                    openList.append(newpos)
+                if newpos not in newTiles:
+                    newTiles.append(newpos)
+            closedList.append(pos)
+
+        for tile in newTiles:
+            self.addTile(layer, (sheetname, sheetLoc, tile), sheets, sheetCnfg, flood=True)
+        del tile
+
+        for chunk in chunks:
+            if layer in self.chunks[chunk]['tiles'] and len(self.chunks[chunk]['tiles'][layer]) > 0:
+                self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+            else:
+                self.removeChunk(chunk)
+        del chunk
+
     @property
     def cleanData(self):
+        '''
+        used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons
+        '''
         newChunkData = {}
         for chunk in self.chunks:
             newChunkData[chunk] = {

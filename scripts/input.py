@@ -39,12 +39,12 @@ class Input:
         if self.currentAssetType == 'decorations':
             return int(mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]), int(my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1])
         elif self.currentAssetType == 'tiles':
-            return (mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE, (my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE
+            return int((mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE), int((my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE)
 
     @property
     def exactPosition(self):
         mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
-        my = self.mouseposition[1] * self.editor.window.camera.ratio[1]
+        my = self.mouseposition[1] * self.editor.window.camera.ratio[1] 
         return int(mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]), int(my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1])
 
     @property
@@ -84,6 +84,11 @@ class Input:
         if self.normalizeSBox():
             return (self.selectionBox['2'][0] - self.selectionBox['1'][0]) * (self.selectionBox['2'][1] - self.selectionBox['1'][1])
         return 0
+
+    @property
+    def selectionBoxRect(self):
+        self.normalizeSBox()
+        return pygame.Rect(self.selectionBox['1'], (self.selectionBox['2'][0] - self.selectionBox['1'][0], self.selectionBox['2'][1] - self.selectionBox['1'][1]))
 
     @property
     def validSBox(self):
@@ -168,6 +173,29 @@ class Input:
                 elif event.key == pygame.K_a:
                     if self.currentAssetType == 'tiles' and self.currentToolType == 'select':
                         self.editor.chunks.autoTile()
+                # flood filling 
+                elif event.key == pygame.K_f:
+                    if self.currentAssetType == 'tiles':
+                        if self.validSBox:
+                            layer = self.currentLayer
+                            sheet = self.editor.window.toolbar.sheetLock
+                            sheetLoc = self.editor.window.toolbar.tileLockLocation
+                            loc = self.penPosition
+                            sheets = self.editor.window.toolbar.sheets.sheets
+                            cnfg = self.editor.window.toolbar.sheets.config
+                            rect = self.selectionBoxRect
+                            scroll = self.editor.window.camera.scroll
+                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect, scroll)
+                        else:
+                            layer = self.currentLayer
+                            sheet = self.editor.window.toolbar.sheetLock
+                            sheetLoc = self.editor.window.toolbar.tileLockLocation
+                            loc = self.penPosition
+                            sheets = self.editor.window.toolbar.sheets.sheets
+                            cnfg = self.editor.window.toolbar.sheets.config
+                            rect = self.editor.window.camera.cameraRect.copy()
+                            scroll = self.editor.window.camera.scroll
+                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect, scroll)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
