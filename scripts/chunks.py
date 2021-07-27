@@ -35,6 +35,19 @@ class Chonky:
         '''
         return [chunk for chunk in self.chunks]
 
+    @property
+    def cleanData(self):
+        '''
+        used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons
+        '''
+        newChunkData = {}
+        for chunk in self.chunks:
+            newChunkData[chunk] = {
+            'tiles':self.chunks[chunk]['tiles'],
+            'decor':self.chunks[chunk]['decor']
+            }
+        return newChunkData
+
     def getRenderList(self, rect, scroll):
         '''
         used by the rendering class to render the bg, tiles, and foreground.
@@ -111,7 +124,6 @@ class Chonky:
         if isinstance(arg, tuple):
             return self.stringifyID(arg[0], arg[1])
         return arg
-
 
     def addChunk(self, chunkID):
         '''
@@ -662,16 +674,3 @@ class Chonky:
             else:
                 self.removeChunk(chunk)
         del chunk
-
-    @property
-    def cleanData(self):
-        '''
-        used during saving to obtain the chunk data without the cached images since the cached images can't be stored in .jsons
-        '''
-        newChunkData = {}
-        for chunk in self.chunks:
-            newChunkData[chunk] = {
-            'tiles':self.chunks[chunk]['tiles'],
-            'decor':self.chunks[chunk]['decor']
-            }
-        return newChunkData
