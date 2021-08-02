@@ -119,6 +119,7 @@ class Input:
                     elif self.mouseposition[0] < self.editor.window.toolbar.width and self.mouseposition[1] > self.editor.window.toolbar.divider.centery:
                         self.editor.window.toolbar.selectTile(self.mouseposition, lock=True)
                     elif self.mouseposition[0] > self.editor.window.toolbar.width and self.currentToolType != 'select':
+                        self.editor.chunks.saveCurrentChunks()
                         self.holding = True
                     elif self.mouseposition[0] > self.editor.window.toolbar.width and self.currentToolType == 'select':
                         if not self.selectionBox['1']:
@@ -166,6 +167,11 @@ class Input:
                 # saving
                 elif event.key == pygame.K_s:
                     self.save()
+                # undo 
+                elif event.key == pygame.K_z:
+                    sheets = self.editor.window.toolbar.sheets.sheets
+                    cnfg = self.editor.window.toolbar.sheets.config
+                    self.editor.chunks.undo(sheets, cnfg)
                 # changing between tiles and decorations
                 elif event.key == pygame.K_w:
                     self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)

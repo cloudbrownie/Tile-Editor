@@ -1,5 +1,6 @@
 import pygame
 import math
+import copy
 
 """
 other classes use the editor pointer to access necessary vars in other classes.
@@ -26,7 +27,7 @@ class Chonky:
         self.sheetID = 0
 
         # for future use of implementing a way to undo certain things
-        self.lastAction = {}
+        self.prevActions = []
 
     @property
     def currentChunks(self):
@@ -43,8 +44,8 @@ class Chonky:
         newChunkData = {}
         for chunk in self.chunks:
             newChunkData[chunk] = {
-            'tiles':self.chunks[chunk]['tiles'],
-            'decor':self.chunks[chunk]['decor']
+            'tiles':copy.deepcopy(self.chunks[chunk]['tiles']),
+            'decor':copy.deepcopy(self.chunks[chunk]['decor'])
             }
         return newChunkData
 
@@ -223,6 +224,7 @@ class Chonky:
         used to add a tile to the chunk system at a certain layer in a chunk. 
         location of the tile is given in the tile data arg which needs to be formatted as: (sheetname, asset location in sheet, non chunk relative tile position).
         needs the sheets and sheetcnfg args for chunk img caching, but wont chunk img cache if this method is used while flood filling.
+        returns the chunk id of the added tile
         '''
         # unpack the tile data
         sheetname, sheetLoc, loc = tiledata
@@ -252,6 +254,8 @@ class Chonky:
         # redraw the cached surface
         if not flood:
             self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+
+        return chunkID
 
     def removeTile(self, layer, loc, sheets, sheetCnfg, bulk=False):
         '''
@@ -548,6 +552,18 @@ class Chonky:
             subsurface = img.subsurface(subsurfRect).copy()
             bgsurf.blit(subsurface, (decorX + self.CACHEIMGPADDING, decorY + self.CACHEIMGPADDING))
 
+        # create the imgs key in the chunk dict if this chunk was originally cleaned
+        self.chunks[chunkID]['imgs'] = {
+                'bg':{
+                    'img':None,
+                    'subs':[]
+                },
+                'fg':{
+                    'img':None,
+                    'subs':[]
+                }
+            }
+
         # cache each surf
         self.chunks[chunkID]['imgs']['fg']['img'] = fgsurf.copy()
         self.chunks[chunkID]['imgs']['bg']['img'] = bgsurf.copy()
@@ -588,6 +604,27 @@ class Chonky:
         id = self.getSheetID(sheetname)
         return id
 
+    def saveCurrentChunks(self):
+        '''
+        method is called in an input class in order to save the current chunks into the previous actions list for undo-ing.
+        also called when flooding, autotiling, and bulk removing
+        used in the tile editor to tell the chunks system to save the last action after the user finishes their current action by letting go of left click
+        '''
+        lastAction = copy.deepcopy(self.cleanData)
+        self.prevActions.append(lastAction)
+
+    def undo(self, sheets, sheetCnfg):
+        '''
+        reverts the chunk system data to a previous version of the chunks, recaches all surfaces since previously saved chunks are stored without cached images.
+        cached images can't be stored due to pickling issues with pygame surfaces and rects.
+        '''
+        if len(self.prevActions) > 0:
+            self.chunks = copy.deepcopy(self.prevActions[-1])
+            self.prevActions.pop(-1)
+            # since the chunks loaded don't have cached surface info from being pickled when saved, must cache each chunk's surface data
+            for chunk in self.chunks:
+                self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+
     def autoTile(self, layer, loc, sheets, sheetCnfg, rect=None):
         '''
         used to convert a large amount of tiles into their correct texture based on their neighbors and the configuration set in the sheetcnfg arg.
@@ -604,6 +641,9 @@ class Chonky:
         creates new chunks.
         needs sheets and sheetcnfg args for caching the images of all affect chunks.
         '''
+        # save current chunks into previous actions list for undo feature
+        self.saveCurrentChunks()
+
         # unpack tile data
         sheetname, sheetLoc, loc = tiledata
 
@@ -645,7 +685,7 @@ class Chonky:
         # add all existing tiles in the same layer in these chunks if they exist
         for chunk in chunks:
             if chunk not in self.chunks:
-                self.addChunk(chunk)
+                self.addChunk(chunk) 
             if layer in self.chunks[chunk]['tiles']:
                 for tile in self.chunks[chunk]['tiles'][layer]:
                     currentChunk = self.deStringifyID(chunk)
@@ -672,14 +712,13 @@ class Chonky:
             closedList.append(pos)
 
         for tile in newTiles:
-            self.addTile(layer, (sheetname, sheetLoc, tile), sheets, sheetCnfg, flood=True)
+            chunk = self.addTile(layer, (sheetname, sheetLoc, tile), sheets, sheetCnfg, flood=True)
+            if chunk not in chunks:
+                chunks.append(chunk)
         del tile
 
         for chunk in chunks:
-            if layer in self.chunks[chunk]['tiles'] and len(self.chunks[chunk]['tiles'][layer]) > 0:
-                self.cacheChunkSurf(chunk, sheets, sheetCnfg)
-            else:
-                self.removeChunk(chunk)
+            self.cacheChunkSurf(chunk, sheets, sheetCnfg)
         del chunk
 
     def bulkRemove(self, layer, sheets, sheetCnfg, rect, scroll):
