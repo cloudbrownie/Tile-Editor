@@ -56,7 +56,7 @@ class Chonky:
         returns a dictionary with blit information
         '''
         # get the visible chunks
-        chunks = self.getVisibleChunks(rect, scroll)
+        chunks = self.getVisibleChunks(rect)
 
         # store all tile surfs and their blit location
         tileSurfs = []
@@ -75,7 +75,7 @@ class Chonky:
 
         return tileSurfs
 
-    def getVisibleChunks(self, rect, scroll, keepAllChunks=False):
+    def getVisibleChunks(self, rect, keepAllChunks=False):
         '''
         returns all chunks within the specified rect and scroll. can ignore chunks that don't already exist
         '''
@@ -90,8 +90,8 @@ class Chonky:
             for j in range(verticalChunks):
 
                 # apply the scroll to the location
-                chunkx = i + int(math.ceil(scroll[0] / (self.CHUNKPX))) - 1
-                chunky = j + int(math.ceil(scroll[1] / (self.CHUNKPX))) - 1
+                chunkx = i + int(math.ceil(rect.x / (self.CHUNKPX))) - 1
+                chunky = j + int(math.ceil(rect.y / (self.CHUNKPX))) - 1
 
                 # stringify the chunk id
                 chunkID = self.stringifyID(chunkx, chunky)
@@ -635,7 +635,7 @@ class Chonky:
         '''
         pass
 
-    def flood(self, layer, tiledata, sheets, sheetCnfg, rect, scroll):
+    def flood(self, layer, tiledata, sheets, sheetCnfg, rect):
         '''
         given a rect for bounding purposes, fills the entire area with tiles of the same texture as given in the tiledata arg. only fills in the given layer.
         creates new chunks.
@@ -680,7 +680,7 @@ class Chonky:
         closedList = []
 
         # find all chunks inside of the rect
-        chunks = self.getVisibleChunks(rect, scroll, keepAllChunks=True)
+        chunks = self.getVisibleChunks(rect, keepAllChunks=True)
 
         # add all existing tiles in the same layer in these chunks if they exist
         for chunk in chunks:
@@ -713,8 +713,8 @@ class Chonky:
 
         for tile in newTiles:
             chunk = self.addTile(layer, (sheetname, sheetLoc, tile), sheets, sheetCnfg, flood=True)
-            if chunk not in chunks:
-                chunks.append(chunk)
+            #if chunk not in chunks:
+            #    chunks.append(chunk)
         del tile
 
         for chunk in chunks:

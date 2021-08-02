@@ -190,8 +190,7 @@ class Input:
                             sheets = self.editor.window.toolbar.sheets.sheets
                             cnfg = self.editor.window.toolbar.sheets.config
                             rect = self.selectionBoxRect
-                            scroll = self.editor.window.camera.scroll
-                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect, scroll)
+                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
                         else:
                             layer = self.currentLayer
                             sheet = self.editor.window.toolbar.sheetLock
@@ -200,8 +199,7 @@ class Input:
                             sheets = self.editor.window.toolbar.sheets.sheets
                             cnfg = self.editor.window.toolbar.sheets.config
                             rect = self.editor.window.camera.cameraRect.copy()
-                            scroll = self.editor.window.camera.scroll
-                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect, scroll)
+                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
