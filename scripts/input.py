@@ -24,6 +24,7 @@ class Input:
 
         self.mouseposition = 0, 0
         self.TILESIZE = self.editor.chunks.TILESIZE
+        self.DECORERASERSIZE = 32
 
         self.penToolTypes = ['draw', 'erase', 'select']
         self.penToolIndex = 0
@@ -54,6 +55,10 @@ class Input:
             return int(mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]), int(my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1])
         elif self.currentAssetType == 'tiles':
             return int((mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE), int((my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE)
+
+    @property
+    def decorEraser(self):
+        return pygame.Rect(self.penPosition[0] - self.DECORERASERSIZE / 2, self.penPosition[1] - self.DECORERASERSIZE / 2, self.DECORERASERSIZE, self.DECORERASERSIZE).copy()
 
     @property
     def currentChunk(self):
