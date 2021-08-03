@@ -288,7 +288,7 @@ class Chonky:
         if not flood:
             self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
-        return chunkID
+        return chunkID, updatedTileData
 
     def removeTile(self, layer, loc, sheets, sheetCnfg, bulk=False):
         '''
@@ -296,6 +296,9 @@ class Chonky:
         location of the tile is given as a non chunk relative tile position.
         needs the sheets and sheetcnfg args for chunk img caching, but wont chunk img cache if this method is used while bulk deleting.
         '''
+        # init a var to store the removed tile if there was one removed to return it
+        tileData = None
+
         # find the current chunk
         chunkID = self.getChunkID(loc)
         if chunkID in self.chunks:
@@ -322,6 +325,7 @@ class Chonky:
                     if tile[2] == loc:
                         tiles.pop(i)
                         changed = True
+                        tileData = tile
 
                 # redraw the chunk surf to update it if the chunk changed
                 if changed:
@@ -330,7 +334,7 @@ class Chonky:
             # remove the layer if empty
             self.removeEmptyLayers(chunkID)
 
-        return chunkID
+        return chunkID, tileData
 
     def findSpillChunks(self, chunk, size, loc):
         '''
@@ -451,9 +455,12 @@ class Chonky:
             # redraw each cached image for each affected chunk
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
+        return [chunk for chunk in infoPerChunk], decordata
+
     def removeDecor(self, layer, rect, sheets, sheetCnfg, bulk=False):
-        # store all effected chunks for recaching later
+        # store all effected chunks for recaching later and the decor data if applicable
         effectedChunks = []
+        decordata = None
 
         # use the center of the rect to find the current chunk
         chunkID = self.getChunkID(rect.center, tile=False)
@@ -483,6 +490,8 @@ class Chonky:
 
                     # store the decor
                     removeDecor.append(decor)
+
+                    decordata = decor
 
                     # try to find all decor bits in spill over chunks if they exist
                     sheetID = decor[0]
@@ -537,7 +546,7 @@ class Chonky:
             for chunk in effectedChunks:
                 self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
-        return effectedChunks
+        return effectedChunks, decordata
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         '''
@@ -759,19 +768,24 @@ class Chonky:
                     newTiles.append(newpos)
             closedList.append(pos)
 
-        for tile in newTiles:
-            chunk = self.addTile(layer, (sheetname, sheetLoc, tile), sheets, sheetCnfg, flood=True)
-            #if chunk not in chunks:
-            #    chunks.append(chunk)
+        addedTiles = []
+        for location in newTiles:
+            chunk, tile = self.addTile(layer, (sheetname, sheetLoc, location), sheets, sheetCnfg, flood=True)
+            addedTiles.append(tile)
+            if chunk not in chunks:
+                chunks.append(chunk)
         del tile
 
         for chunk in chunks:
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
         del chunk
 
+        return chunks, addedTiles
+
     def bulkRemove(self, entityType, layer, sheets, sheetCnfg, rect):
         '''
         deletes all tiles or decor inside a large rect.
+        returns a tuple of lists as (chunk list, tile/decor list)
         '''
         # save the chunks for undo feature
         self.saveCurrentChunks()
@@ -805,18 +819,29 @@ class Chonky:
                             continue    
                         removeTiles.append(unrelativeTileLocation)
 
+
+            # store removed tiles
+            removedTiles = []
+
             # remove the tiles outside of iteration because removing during iteration causes issues in this case
             for tileLocation in removeTiles:
-                chunk = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
-                effectedChunks.append(chunk)
+                chunk, tile = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
+                if tile != None:
+                    removedTiles.append(tile)
+                if chunk not in effectedChunks:
+                    effectedChunks.append(chunk)
 
             # remove empty chunks
             self.removeEmptyChunks()
 
             # iterate through effected chunks and recache their surfaces
-            for chunk in effectedChunks:
+            for i, chunk in enumerate(effectedChunks):
                 if chunk in self.chunks:
                     self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+                else:
+                    effectedChunks.pop(i)
+
+            return effectedChunks, removedTiles
 
         elif entityType == 'decorations':
             # store all clip rects 
@@ -830,18 +855,25 @@ class Chonky:
 
                 clipRects.append(clipRect)
 
-            # store all effected chunks
+            # store all effected chunks and removed decor
             effectedChunks = []
+            removedDecor = []
 
             # iterate through all clip rects and call the remove decor method using each clip rect
             for clipRect in clipRects:
-                chunks = self.removeDecor(layer, clipRect, sheets, sheetCnfg, bulk=True)
-                effectedChunks.extend(chunks)
+                chunks, decor = self.removeDecor(layer, clipRect, sheets, sheetCnfg, bulk=True)
+                removedDecor.append(decor)
+                if chunk not in effectedChunks:
+                    effectedChunks.extend(chunks)
 
             # remove empty chunks
             self.removeEmptyChunks()
 
             # iterate throguh effected chunks and recache their surface
-            for chunk in effectedChunks:
+            for i, chunk in enumerate(effectedChunks):
                 if chunk in self.chunks:
                     self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+                else:
+                    effectedChunks.pop(i)
+
+            return effectedChunks, removedDecor
