@@ -24,7 +24,7 @@ class Input:
 
         self.mouseposition = 0, 0
         self.TILESIZE = self.editor.chunks.TILESIZE
-        self.DECORERASERSIZE = 32
+        self.DECORERASERSIZE = 16
 
         self.penToolTypes = ['draw', 'erase', 'select']
         self.penToolIndex = 0
@@ -268,10 +268,10 @@ class Input:
             # removing decor
             elif self.currentToolType == 'erase' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
                 layer = self.currentDecorationLayer
-                loc = self.penPosition
+                rect = self.decorEraser
                 sheets = self.editor.window.toolbar.sheets.sheets
                 sheetCnfg = self.editor.window.toolbar.sheets.config
-                self.editor.chunks.removeDecor(layer, loc, sheets, sheetCnfg)
+                self.editor.chunks.removeDecor(layer, rect, sheets, sheetCnfg)
 
         # when selecting, if the selection box area is too small, just destroy the selection box
         if self.selectionBox['1'] and self.selectionBox['2'] and (not self.validSBox or self.currentToolType != 'select'):

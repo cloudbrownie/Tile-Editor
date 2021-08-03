@@ -451,83 +451,93 @@ class Chonky:
             # redraw each cached image for each affected chunk
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
-    def removeDecor(self, layer, loc, sheets, sheetCnfg):
-        '''
-        removes decorations in either the fg or bg layer in a chunk at the location arg.
-        needs the sheets and sheetcnfg args for chunk img caching.
-        '''
-        # find the current chunk
-        chunkID = self.getChunkID(loc, tile=False)
+    def removeDecor(self, layer, rect, sheets, sheetCnfg, bulk=False):
+        # store all effected chunks for recaching later
+        effectedChunks = []
+
+        # use the center of the rect to find the current chunk
+        chunkID = self.getChunkID(rect.center, tile=False)
         if chunkID in self.chunks:
 
-            # get the list of decor in the selected layer 
-            decors = self.chunks[chunkID]['decor'][layer]
-            for i, decor in enumerate(decors):
-                # make a decor rect fro mthe stored decor data
+            # store all decor to delete
+            removeDecor = []
+            for i, decor in enumerate(self.chunks[chunkID]['decor'][layer]):
+                # make a decor rect from the stored data
                 decorRect = pygame.Rect(decor[2][0], decor[2][1], decor[3][2], decor[3][3])
 
+                # since the decor rect is chunk relative, make the rect chunk relative
+                relativeRect = rect.copy()
                 chunkx, chunky = self.deStringifyID(chunkID)
-
-                # since the decorRect is relative to the current chunk, make the location relative to the current chunk
-                relativeLoc = [loc[0] - chunkx * self.CHUNKPX, loc[1] - chunky * self.CHUNKPX]
+                relativeRect.x -= chunkx * self.CHUNKPX
+                relativeRect.y -= chunky * self.CHUNKPX
 
                 # normalize negative values
-                if relativeLoc[0] < 0:
-                    relativeLoc[0] = self.CHUNKPX + relativeLoc[0]
-                if relativeLoc[1] < 0:
-                    relativeLoc[1] = self.CHUNKPX + relativeLoc[1]
+                if relativeRect.centerx < 0:
+                    relativeRect.centerx = self.CHUNKPX + relativeRect.centerx
+                if relativeRect.centery < 0:
+                    relativeRect.centery = self.CHUNKPX + relativeRect.centery
 
-                # check if the point is inside of the decor rect
-                if decorRect.collidepoint(relativeLoc):
-                    decors.pop(i)
+                # check if the rects collide
+                if relativeRect.colliderect(decorRect):
+                    effectedChunks.append(chunkID)
 
-                    # get the decor asset and compare sizes to check if this decor is a spill fragment
+                    # store the decor
+                    removeDecor.append(decor)
+
+                    # try to find all decor bits in spill over chunks if they exist
                     sheetID = decor[0]
-                    assetLoc = decor[1]
-                    width, height = sheets[self.sheetReferences[sheetID]][0][assetLoc[0]][assetLoc[1]].get_size()
-                    # check if the size is bigger somewhere, if so than this is a spill fragment
+                    assetLocation = decor[1]
+                    width, height = sheets[self.sheetReferences[sheetID]][0][assetLocation[0]][assetLocation[1]].get_size()
+                    # if the original dimensions are larger than the current dimensions, then we have spill overs
                     if width > decorRect.w or height > decorRect.h:
-                        # find the chunks where the other fragments would be
-                        otherChunks = []
-                        currentChunkx, currentChunky = self.getChunkID(loc, tile=False, string=False)
-                        originalTopLeft = currentChunkx * self.CHUNKPX + decor[2][0] - decor[3][0], currentChunky * self.CHUNKPX + decor[2][1] - decor[3][1]
-                        originalChunk = self.getChunkID(originalTopLeft, tile=False, string=False)
-
-                        # use method to find the spill chunks of each fragment
-                        spillOverChunks = self.findSpillChunks(originalChunk, (width, height), originalTopLeft)
-
-                        # find the size of each fragment for each chunk
+                        # find the original topleft placement of the decor to find spill over chunks of the original decor
+                        originalTopLeft = chunkx * self.CHUNKPX + decor[2][0] - decor[3][0], chunky * self.CHUNKPX + decor[2][1] - decor[3][1]
+                        originalChunk = self.getChunkID(originalTopLeft, tile=False)
+                        spillOverChunks = self.findSpillChunks(self.deStringifyID(originalChunk), (width, height), originalTopLeft)
+                        # since the spill over chunks contains the original, remove the original from the spill overs
+                        spillOverChunks = [chunk for chunk in spillOverChunks if chunk != (chunkx, chunky)]
+                        # find each fragment in the spill over chunks
                         for spillChunk in spillOverChunks:
-                            spillChunkx, spillChunky = spillChunk
+                            # store the relative decor to remove
+                            relRemoveDecor = []
 
+                            sChunkx, sChunky = spillChunk
                             # create rects to find the correct rects for the decor through clipping
-                            chunkRect = pygame.Rect(spillChunkx * self.CHUNKPX, spillChunky * self.CHUNKPX, self.CHUNKPX, self.CHUNKPX)
+                            chunkRect = pygame.Rect(sChunkx * self.CHUNKPX, sChunky * self.CHUNKPX, self.CHUNKPX, self.CHUNKPX)
                             chunkRect.normalize()
-                            decorRect = pygame.Rect(originalTopLeft[0], originalTopLeft[1], width, height)
-
-                            decorClipRect = chunkRect.clip(decorRect)
-
-                            # use this clip to find the relative blit location
-                            relativeBlitx = decorClipRect.x - spillChunkx * self.CHUNKPX
-                            relativeBlity = decorClipRect.y - spillChunky * self.CHUNKPX
+                            sDecorRect = pygame.Rect(originalTopLeft[0], originalTopLeft[1], width, height)
+                            sDecorClip = chunkRect.clip(sDecorRect)
 
                             # normalize the clipped rect
-                            decorClipRect.normalize()
+                            sDecorClip.normalize()
+
+                            # use this clip to find the relative blit location
+                            relativeBlitx = sDecorClip.x - sChunkx * self.CHUNKPX
+                            relativeBlity = sDecorClip.y - sChunky * self.CHUNKPX
 
                             # make the topleft coord of the rect relative to the actual decor for the subsurface
-                            decorClipRect.x = decorClipRect.x - originalTopLeft[0]
-                            decorClipRect.y = decorClipRect.y - originalTopLeft[1]
+                            sDecorClip.x = sDecorClip.x - originalTopLeft[0]
+                            sDecorClip.y = sDecorClip.y - originalTopLeft[1]
 
-                            # remove the decor in this chunk with this exact placement info
-                            currentChunkID = self.stringifyID(spillChunkx, spillChunky)
-                            for i, chunkDecor in enumerate(self.chunks[currentChunkID]['decor'][layer]):
-                                if chunkDecor[2] == (relativeBlitx, relativeBlity) and chunkDecor[3] == (decorClipRect.x, decorClipRect.y, decorClipRect.w, decorClipRect.h):
-                                    self.chunks[currentChunkID]['decor'][layer].pop(i)
+                            # store the decor to remove in this chunk
+                            currentChunk = self.stringifyID(sChunkx, sChunky)
+                            for chunkDecor in self.chunks[currentChunk]['decor'][layer]:
+                                if chunkDecor[2] == (relativeBlitx, relativeBlity) and chunkDecor[3] == (sDecorClip.x, sDecorClip.y, sDecorClip.w, sDecorClip.h):
+                                    relRemoveDecor.append(chunkDecor)
 
-                            # recache the surface for the spill chunk
-                            self.cacheChunkSurf(self.stringifyID(spillChunkx, spillChunky), sheets, sheetCnfg)
+                            if len(relRemoveDecor) > 0:
+                                for decor in relRemoveDecor:
+                                    self.chunks[currentChunk]['decor'][layer].remove(decor)
+                                effectedChunks.append(currentChunk)
+            
+            for decor in removeDecor:
+                self.chunks[chunkID]['decor'][layer].remove(decor)
 
-                    self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+        if not bulk:
+            for chunk in effectedChunks:
+                self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+
+        return effectedChunks
 
     def cacheChunkSurf(self, chunkID, sheets, sheetCnfg):
         '''
