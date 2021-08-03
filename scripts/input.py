@@ -56,6 +56,10 @@ class Input:
             return int((mx * self.editor.window.camera.zoom + self.editor.window.camera.scroll[0]) // self.TILESIZE), int((my * self.editor.window.camera.zoom + self.editor.window.camera.scroll[1]) // self.TILESIZE)
 
     @property
+    def currentChunk(self):
+        return self.editor.chunks.getChunkID(self.penPosition, tile=(self.currentAssetType == 'tiles'))
+
+    @property
     def exactPosition(self):
         mx = (self.mouseposition[0] - self.editor.window.toolbar.width) * self.editor.window.camera.ratio[0]
         my = self.mouseposition[1] * self.editor.window.camera.ratio[1] 

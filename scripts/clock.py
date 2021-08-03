@@ -7,6 +7,7 @@ class Clock:
         self.lastTime = 0
         self.dt = 0
         self.fpsPace = 60
+        self.averageFrames = []
 
     def start(self):
         self.startTime = time.time()
@@ -14,13 +15,21 @@ class Clock:
     def tick(self):
         self.dt = (time.time() - self.lastTime) * 60
         self.lastTime = time.time()
+        self.averageFrames.append(self.fps)
+        if len(self.averageFrames) > self.fpsPace:
+            self.averageFrames.pop(0)
+
+    @property
+    def avgFPS(self):
+        if self.averageFrames == []:
+            return 0    
+        return int(sum(self.averageFrames) / len(self.averageFrames))
 
     @property
     def fps(self):
-        try:
+        if self.dt != 0:
             return int(1 / (self.dt / self.fpsPace))
-        except:
-            return 0
+        return 0
 
     @property
     def runTime(self):
