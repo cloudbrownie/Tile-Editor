@@ -232,8 +232,13 @@ class Input:
                         cnfg = self.editor.window.toolbar.sheets.config
                         rect = self.selectionBoxRect
                         self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
-                    elif self.currentAssetType == 'decor' and self.validSBox:
-                        pass
+                    elif self.currentAssetType == 'decorations' and self.validSBox:
+                        entityType = self.currentAssetType
+                        layer = self.currentDecorationLayer
+                        sheets = self.editor.window.toolbar.sheets.sheets
+                        cnfg = self.editor.window.toolbar.sheets.config
+                        rect = self.selectionBoxRect
+                        self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():

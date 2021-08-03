@@ -777,7 +777,7 @@ class Chonky:
         self.saveCurrentChunks()
 
         # find all chunks inside of the rect
-        chunks = self.getVisibleChunks(rect)
+        boundChunks = self.getVisibleChunks(rect)
 
         # separate action based on type
         if entityType == 'tiles':
@@ -793,7 +793,7 @@ class Chonky:
             # keep track of all unrelative tile locations to remove 
             removeTiles = []
             # iterate through all chunks in bounds
-            for chunk in chunks:
+            for chunk in boundCHunks:
                 # check if the layer exists in the chunk
                 if layer in self.chunks[chunk]['tiles']:
                     # iterate through each tile in the layer
@@ -818,5 +818,30 @@ class Chonky:
                 if chunk in self.chunks:
                     self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
-        elif entityType == 'decor':
-            pass
+        elif entityType == 'decorations':
+            # store all clip rects 
+            clipRects = []
+            
+            # iterate through each chunk and create a clip rect for each chunk
+            for chunk in boundChunks:
+                chunkx, chunky = self.deStringifyID(chunk)
+                chunkRect = pygame.Rect(chunkx * self.CHUNKPX, chunky * self.CHUNKPX, self.CHUNKPX, self.CHUNKPX)
+                clipRect = chunkRect.clip(rect)
+
+                clipRects.append(clipRect)
+
+            # store all effected chunks
+            effectedChunks = []
+
+            # iterate through all clip rects and call the remove decor method using each clip rect
+            for clipRect in clipRects:
+                chunks = self.removeDecor(layer, clipRect, sheets, sheetCnfg, bulk=True)
+                effectedChunks.extend(chunks)
+
+            # remove empty chunks
+            self.removeEmptyChunks()
+
+            # iterate throguh effected chunks and recache their surface
+            for chunk in effectedChunks:
+                if chunk in self.chunks:
+                    self.cacheChunkSurf(chunk, sheets, sheetCnfg)
