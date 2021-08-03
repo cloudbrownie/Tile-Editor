@@ -793,7 +793,7 @@ class Chonky:
             # keep track of all unrelative tile locations to remove 
             removeTiles = []
             # iterate through all chunks in bounds
-            for chunk in boundCHunks:
+            for chunk in boundChunks:
                 # check if the layer exists in the chunk
                 if layer in self.chunks[chunk]['tiles']:
                     # iterate through each tile in the layer
