@@ -159,6 +159,39 @@ class Chonky:
         if chunkID in self.chunks:
             del self.chunks[chunkID]
 
+    def removeEmptyChunks(self):
+        '''
+        simply removes all chunks that are completely empty
+        '''
+        removedChunks = []
+        for chunk in self.chunks:
+            empty = True
+            for layer in self.chunks[chunk]['tiles']:
+                if len(self.chunks[chunk]['tiles'][layer]) > 0:
+                    empty = False
+            for layer in self.chunks[chunk]['decor']:
+                if len(self.chunks[chunk]['decor'][layer]) > 0:
+                    empty = False
+            if empty:
+                removedChunks.append(chunk)
+
+        for chunk in removedChunks:
+            self.removeChunk(chunk)
+
+        return removedChunks
+            
+    def removeEmptyLayers(self, chunkID):
+        '''
+        removes the empty layers from a specifed chunk
+        '''
+        tileLayers = []
+        for layer in self.chunks[chunkID]['tiles']:
+            if not len(self.chunks[chunkID]['tiles'][layer]) > 0:
+                tileLayers.append(layer)
+        for layer in tileLayers:
+            del self.chunks[chunkID]['tiles'][layer]
+        return tileLayers
+
     def getChunkID(self, location, tile=True, string=True):
         '''
         intakes a location which is specified to be either a tile position or an exact position and returns the chunk id as either a string or a tuple of ints, specified by the string arg
@@ -293,6 +326,11 @@ class Chonky:
                 # redraw the chunk surf to update it if the chunk changed
                 if changed:
                     self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+
+            # remove the layer if empty
+            self.removeEmptyLayers(chunkID)
+
+        return chunkID
 
     def findSpillChunks(self, chunk, size, loc):
         '''
@@ -721,8 +759,45 @@ class Chonky:
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
         del chunk
 
-    def bulkRemove(self, layer, sheets, sheetCnfg, rect, scroll):
+    def bulkRemove(self, entityType, layer, sheets, sheetCnfg, rect):
         '''
-        
+        deletes all tiles or decor inside a large rect.
         '''
-        pass
+        # save the chunks for undo feature
+        self.saveCurrentChunks()
+
+        # find all chunks inside of the rect
+        chunks = self.getVisibleChunks(rect)
+
+        # separate action based on type
+        if entityType == 'tiles':
+            # create the bounding tile positions
+            leftBound = self.convertExactToTilePosition(rect.midleft)[0]
+            rightBound = self.convertExactToTilePosition(rect.midright)[0]
+            topBound = self.convertExactToTilePosition(rect.midtop)[1]
+            bottomBound = self.convertExactToTilePosition(rect.midbottom)[1]
+
+            # store all chunks that have been effected for surface recaching
+            chunks = []
+
+            # now just iterate through every possible tile position within these bounds and remove all tiles existing within the bounds
+            for i in range(rect.w + 1):
+                for j in range(rect.h + 1):
+
+                    # find the relative location
+                    tileLocation = leftBound + i, topBound + j
+
+                    # remove the tile and store the effected chunk
+                    chunk = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
+                    chunks.append(chunk)
+
+            # remove empty chunks
+            self.removeEmptyChunks()
+
+            # iterate through effected chunks and recache their surfaces
+            for chunk in chunks:
+                if chunk in self.chunks:
+                    self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+
+        elif entityType == 'decor':
+            pass

@@ -4,6 +4,20 @@ import shutil
 import os
 import json
 
+# store keybinds
+DRAW = pygame.K_1
+ERASE = pygame.K_2
+SELECT = pygame.K_3
+INCREMENTLAYER = pygame.K_EQUALS
+DECREMENTLAYER = pygame.K_MINUS
+QUIT = pygame.K_ESCAPE
+SAVE = pygame.K_s
+UNDO = pygame.K_z
+TYPESWAP = pygame.K_w
+AUTOTILE = pygame.K_a
+FLOOD = pygame.K_f
+BULKREMOVE = pygame.K_r
+
 class Input:
     def __init__(self, editor):
         self.editor = editor
@@ -144,43 +158,43 @@ class Input:
 
             elif event.type == pygame.KEYDOWN:
                 # changing pen tools
-                if event.key == pygame.K_1:
+                if event.key == DRAW:
                     self.penToolIndex = 0
-                elif event.key == pygame.K_2:
+                elif event.key == ERASE:
                     self.penToolIndex = 1
-                elif event.key == pygame.K_3:
+                elif event.key == SELECT:
                     self.penToolIndex = 2
                 # changing layers
-                elif event.key == pygame.K_EQUALS:
+                elif event.key == INCREMENTLAYER:
                     if self.currentAssetType == 'tiles':
                         self.currentLayer += 1
                     elif self.currentAssetType == 'decorations':
                         self.decoLayerIndex = (self.decoLayerIndex + 1) % len(self.decoLayers)
-                elif event.key == pygame.K_MINUS:
+                elif event.key == DECREMENTLAYER:
                     if self.currentAssetType == 'tiles':
                         self.currentLayer -= 1
                     elif self.currentAssetType == 'decorations':
                         self.decoLayerIndex = (self.decoLayerIndex - 1) % len(self.decoLayers)
                 # quit event
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == QUIT:
                     self.editor.stop()
                 # saving
-                elif event.key == pygame.K_s:
+                elif event.key == SAVE:
                     self.save()
                 # undo 
-                elif event.key == pygame.K_z:
+                elif event.key == UNDO:
                     sheets = self.editor.window.toolbar.sheets.sheets
                     cnfg = self.editor.window.toolbar.sheets.config
                     self.editor.chunks.undo(sheets, cnfg)
                 # changing between tiles and decorations
-                elif event.key == pygame.K_w:
+                elif event.key == TYPESWAP:
                     self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)
                 # auto tiling 
-                elif event.key == pygame.K_a:
+                elif event.key == AUTOTILE:
                     if self.currentAssetType == 'tiles' and self.currentToolType == 'select':
                         self.editor.chunks.autoTile()
                 # flood filling 
-                elif event.key == pygame.K_f:
+                elif event.key == FLOOD:
                     if self.currentAssetType == 'tiles':
                         if self.validSBox:
                             layer = self.currentLayer
@@ -200,6 +214,17 @@ class Input:
                             cnfg = self.editor.window.toolbar.sheets.config
                             rect = self.editor.window.camera.cameraRect.copy()
                             self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
+                # bulk removing
+                elif event.key == BULKREMOVE:
+                    if self.currentAssetType == 'tiles' and self.validSBox:
+                        entityType = self.currentAssetType
+                        layer = self.currentLayer
+                        sheets = self.editor.window.toolbar.sheets.sheets
+                        cnfg = self.editor.window.toolbar.sheets.config
+                        rect = self.selectionBoxRect
+                        self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                    elif self.currentAssetType == 'decor' and self.validSBox:
+                        pass
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
