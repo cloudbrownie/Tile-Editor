@@ -780,17 +780,25 @@ class Chonky:
             # store all chunks that have been effected for surface recaching
             effectedChunks = []
 
-            existingTiles = []
+            # keep track of all unrelative tile locations to remove 
+            removeTiles = []
+            # iterate through all chunks in bounds
             for chunk in chunks:
+                # check if the layer exists in the chunk
                 if layer in self.chunks[chunk]['tiles']:
+                    # iterate through each tile in the layer
                     for tile in self.chunks[chunk]['tiles'][layer]:
+                        # convert the tile location to an unrelative tile location and then store it if the location is in bounds
                         chunkx, chunky = self.deStringifyID(chunk)
                         unrelativeTileLocation = tile[2][0] + chunkx * self.CHUNKSIZE, tile[2][1] + chunky * self.CHUNKSIZE
-                        existingTiles.append(unrelativeTileLocation)
+                        if unrelativeTileLocation[0] < leftBound or unrelativeTileLocation[0] > rightBound or unrelativeTileLocation[1] < topBound or unrelativeTileLocation[1] > bottomBound:
+                            continue    
+                        removeTiles.append(unrelativeTileLocation)
 
-            for existingTile in existingTiles:
-                chunk = self.removeTile(layer, existingTile, sheets, sheetCnfg, bulk=True)
-
+            # remove the tiles outside of iteration because removing during iteration causes issues in this case
+            for tileLocation in removeTiles:
+                chunk = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
+                effectedChunks.append(chunk)
 
             # remove empty chunks
             self.removeEmptyChunks()
