@@ -778,24 +778,25 @@ class Chonky:
             bottomBound = self.convertExactToTilePosition(rect.midbottom)[1]
 
             # store all chunks that have been effected for surface recaching
-            chunks = []
+            effectedChunks = []
 
-            # now just iterate through every possible tile position within these bounds and remove all tiles existing within the bounds
-            for i in range(rect.w + 1):
-                for j in range(rect.h + 1):
+            existingTiles = []
+            for chunk in chunks:
+                if layer in self.chunks[chunk]['tiles']:
+                    for tile in self.chunks[chunk]['tiles'][layer]:
+                        chunkx, chunky = self.deStringifyID(chunk)
+                        unrelativeTileLocation = tile[2][0] + chunkx * self.CHUNKSIZE, tile[2][1] + chunky * self.CHUNKSIZE
+                        existingTiles.append(unrelativeTileLocation)
 
-                    # find the relative location
-                    tileLocation = leftBound + i, topBound + j
+            for existingTile in existingTiles:
+                chunk = self.removeTile(layer, existingTile, sheets, sheetCnfg, bulk=True)
 
-                    # remove the tile and store the effected chunk
-                    chunk = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
-                    chunks.append(chunk)
 
             # remove empty chunks
             self.removeEmptyChunks()
 
             # iterate through effected chunks and recache their surfaces
-            for chunk in chunks:
+            for chunk in effectedChunks:
                 if chunk in self.chunks:
                     self.cacheChunkSurf(chunk, sheets, sheetCnfg)
 
