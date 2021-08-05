@@ -19,6 +19,9 @@ FLOOD = pygame.K_f
 BULKREMOVE = pygame.K_r
 
 class Input:
+    '''
+    important class that acts as the link between the chunk system and every other script in the project.
+    '''
     def __init__(self, editor):
         self.editor = editor
 
@@ -46,6 +49,8 @@ class Input:
         self.SELECTIONBOXCOLOR = 255, 255, 255
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
+
+        self.chunks = []
 
     @property
     def penPosition(self):
@@ -205,24 +210,23 @@ class Input:
                 # flood filling 
                 elif event.key == FLOOD:
                     if self.currentAssetType == 'tiles':
+                        layer = self.currentLayer
+                        sheet = self.editor.window.toolbar.sheetLock
+                        sheetLoc = self.editor.window.toolbar.tileLockLocation
+                        loc = self.penPosition
+                        sheets = self.editor.window.toolbar.sheets.sheets
+                        cnfg = self.editor.window.toolbar.sheets.config
                         if self.validSBox:
-                            layer = self.currentLayer
-                            sheet = self.editor.window.toolbar.sheetLock
-                            sheetLoc = self.editor.window.toolbar.tileLockLocation
-                            loc = self.penPosition
-                            sheets = self.editor.window.toolbar.sheets.sheets
-                            cnfg = self.editor.window.toolbar.sheets.config
                             rect = self.selectionBoxRect
-                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
                         else:
-                            layer = self.currentLayer
-                            sheet = self.editor.window.toolbar.sheetLock
-                            sheetLoc = self.editor.window.toolbar.tileLockLocation
-                            loc = self.penPosition
-                            sheets = self.editor.window.toolbar.sheets.sheets
-                            cnfg = self.editor.window.toolbar.sheets.config
                             rect = self.editor.window.camera.cameraRect.copy()
-                            self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
+                        _, tiles = self.editor.chunks.flood(layer, (sheet, sheetLoc, loc), sheets, cnfg, rect)
+                        self.editor.clock.tick()
+                        for tileLoc in tiles:
+                            tilex, tiley = tileLoc
+                            tilex *= self.editor.chunks.TILESIZE
+                            tiley *= self.editor.chunks.TILESIZE
+                            self.editor.window.vfx.addPlace((tilex, tiley))
                 # bulk removing
                 elif event.key == BULKREMOVE:
                     if self.currentAssetType == 'tiles' and self.validSBox:
@@ -253,7 +257,13 @@ class Input:
                 loc = self.penPosition
                 sheets = self.editor.window.toolbar.sheets.sheets
                 cnfg = self.editor.window.toolbar.sheets.config
-                self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
+                chunk, (_, _, tileLoc), valid = self.editor.chunks.addTile(self.currentLayer, (sheet, sheetLoc, loc), sheets, cnfg)
+                if valid:
+                    chunkx, chunky = self.editor.chunks.deStringifyID(chunk)
+                    tilex, tiley = tileLoc
+                    tilex = tilex * self.editor.chunks.TILESIZE + chunkx * self.editor.chunks.CHUNKPX
+                    tiley = tiley * self.editor.chunks.TILESIZE + chunky * self.editor.chunks.CHUNKPX
+                    self.editor.window.vfx.addPlace((tilex, tiley))
             # removing tiles
             elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                 loc = self.penPosition
@@ -277,6 +287,18 @@ class Input:
                 sheets = self.editor.window.toolbar.sheets.sheets
                 sheetCnfg = self.editor.window.toolbar.sheets.config
                 self.editor.chunks.removeDecor(layer, rect, sheets, sheetCnfg)
+
+        # add chunk effect the vfx handler
+        chunks = self.editor.chunks.currentChunks
+        for chunk in chunks:
+            if chunk not in self.chunks:
+                chunkCoords = self.editor.chunks.deStringifyID(chunk)
+                self.editor.window.vfx.addChunkAdd(chunkCoords)
+        for chunk in self.chunks:
+            if chunk not in chunks:
+                chunkCoords = self.editor.chunks.deStringifyID(chunk)
+                self.editor.window.vfx.addChunkRemove(chunkCoords)
+        self.chunks = chunks.copy()
 
         # when selecting, if the selection box area is too small, just destroy the selection box
         if self.selectionBox['1'] and self.selectionBox['2'] and (not self.validSBox or self.currentToolType != 'select'):

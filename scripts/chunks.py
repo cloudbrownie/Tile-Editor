@@ -277,18 +277,24 @@ class Chonky:
         # update the tile data to use the sheet reference so the saved .json doesn't get bloated with long strings
         updatedTileData = self.getSheetID(sheetname), sheetLoc, (tilex, tiley)
 
+        validPlace = True
+
         # check if a tile exists in this exact location already, if so, overwrite it
         for i, tile in enumerate(self.chunks[chunkID]['tiles'][layer]):
-            if tile[2] == updatedTileData[2]:
+            if tile == updatedTileData:
+                validPlace = False
+            elif tile[2] == updatedTileData[2]:
+                validPlace = True
                 self.chunks[chunkID]['tiles'][layer].pop(i)
 
-        self.chunks[chunkID]['tiles'][layer].append(updatedTileData)
+        if validPlace:
+            self.chunks[chunkID]['tiles'][layer].append(updatedTileData)
 
-        # redraw the cached surface
-        if not flood:
-            self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
+            # redraw the cached surface
+            if not flood:
+                self.cacheChunkSurf(chunkID, sheets, sheetCnfg)
 
-        return chunkID, updatedTileData
+        return chunkID, updatedTileData, validPlace
 
     def removeTile(self, layer, loc, sheets, sheetCnfg, bulk=False):
         '''
@@ -333,6 +339,9 @@ class Chonky:
 
             # remove the layer if empty
             self.removeEmptyLayers(chunkID)
+
+            # remove the chunk if empty
+            self.removeEmptyChunks()
 
         return chunkID, tileData
 
@@ -713,15 +722,7 @@ class Chonky:
             if layer in self.chunks[originalChunk]['tiles']:
                 for tile in self.chunks[originalChunk]['tiles'][layer]:
                     if tile[2] == originalTile:
-                        return 
-        
-        # create this chunk if it doesn't exist
-        if originalChunk not in self.chunks:
-            self.addChunk(originalChunk)
-
-        # create the layer if it doesn't exist in this chunk
-        if layer not in self.chunks[originalChunk]['tiles']:
-            self.addLayer(originalChunk, layer)
+                        return [], []
 
         # find the bounding tile positions
         leftBound = self.convertExactToTilePosition(rect.midleft)[0]
@@ -732,25 +733,24 @@ class Chonky:
         # start the open list and closed list; open list contains the current tile position
         originalChunk = self.deStringifyID(originalChunk)
         currentTile = originalTile[0] + originalChunk[0] * self.CHUNKSIZE, originalTile[1] + originalChunk[1] * self.CHUNKSIZE
-        openList = [currentTile]
+        openList = []
+        if currentTile[0] > leftBound and currentTile[0] < rightBound and currentTile[1] > topBound and currentTile[1] < bottomBound:
+            openList.append(currentTile)
         newTiles = []
         closedList = []
 
         # find all chunks inside of the rect
-        chunks = self.getVisibleChunks(rect, keepAllChunks=True)
+        chunks = self.getVisibleChunks(rect)
 
         # add all existing tiles in the same layer in these chunks if they exist
         for chunk in chunks:
-            if chunk not in self.chunks:
-                self.addChunk(chunk) 
             if layer in self.chunks[chunk]['tiles']:
                 for tile in self.chunks[chunk]['tiles'][layer]:
                     currentChunk = self.deStringifyID(chunk)
                     closedTile = tile[2][0] + currentChunk[0] * self.CHUNKSIZE, tile[2][1] + currentChunk[1] * self.CHUNKSIZE
                     closedList.append(closedTile)
-        del chunk
 
-        if currentTile not in closedList:
+        if currentTile not in closedList and currentTile in openList:
             newTiles.append(currentTile)
 
         while len(openList) > 0:
@@ -768,19 +768,15 @@ class Chonky:
                     newTiles.append(newpos)
             closedList.append(pos)
 
-        addedTiles = []
         for location in newTiles:
-            chunk, tile = self.addTile(layer, (sheetname, sheetLoc, location), sheets, sheetCnfg, flood=True)
-            addedTiles.append(tile)
+            chunk, _, _ = self.addTile(layer, (sheetname, sheetLoc, location), sheets, sheetCnfg, flood=True)
             if chunk not in chunks:
                 chunks.append(chunk)
-        del tile
 
         for chunk in chunks:
             self.cacheChunkSurf(chunk, sheets, sheetCnfg)
-        del chunk
 
-        return chunks, addedTiles
+        return chunks, newTiles
 
     def bulkRemove(self, entityType, layer, sheets, sheetCnfg, rect):
         '''

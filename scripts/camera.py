@@ -54,6 +54,12 @@ class Camera:
     def render(self):
         self.camera.fill(self.COLOR)
 
+        # render the visual effects
+        effectData = self.window.vfx.effectData
+        for data in effectData:
+            surface, blitLocation = data
+            self.camera.blit(surface, (blitLocation[0] - self.scroll[0], blitLocation[1] - self.scroll[1]), special_flags=pygame.BLEND_RGBA_ADD)
+
         # render the chunks
         chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect, self.scroll)
         for chunk in chunkInfo:
@@ -80,10 +86,9 @@ class Camera:
             size = decor.get_size()
             self.camera.blit(decor, (x - self.scroll[0] - size[0] // 2, y - self.scroll[1] - size[1] // 2))
 
-
         # lines to indicate the origin
-        pygame.draw.line(self.camera, (202, 210, 197), (0 - self.scroll[0], self.originCross // 2 - self.scroll[1]), (0 - self.scroll[0], -self.originCross // 2 - self.scroll[1]), self.scale)
-        pygame.draw.line(self.camera, (202, 210, 197), (self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), (-self.originCross // 2 - self.scroll[0], 0 - self.scroll[1]), self.scale)
+        pygame.draw.line(self.camera, (202, 210, 197), (0 - self.scroll[0] - self.scale / 2, self.originCross // 2 - self.scroll[1]), (0 - self.scroll[0] - self.scale / 2, -self.originCross // 2 - self.scroll[1] - self.scale / 2), self.scale) # bottom to top
+        pygame.draw.line(self.camera, (202, 210, 197), (self.originCross // 2 - self.scroll[0], 0 - self.scroll[1] - self.scale / 2), (-self.originCross // 2 - self.scroll[0] - self.scale / 2, 0 - self.scroll[1] - self.scale / 2), self.scale) # right to left
 
         # draw the input class's selection box
         if self.window.editor.input.validSBox:

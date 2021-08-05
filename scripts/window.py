@@ -2,6 +2,7 @@ import pygame
 from .camera import Camera
 from .toolbar import Toolbar
 from .gui import GUI
+from .vfxhandler import VFXHandler
 
 WINDOWSIZE = 1500, 800
 
@@ -23,11 +24,13 @@ class Window:
         self.toolbar = Toolbar(self)
         self.camera = Camera(self)
         self.gui = GUI(self)
+        self.vfx = VFXHandler(self)
 
     def update(self):
         self.window.fill((0, 0, 0))
 
         self.toolbar.render()
+        self.vfx.handleEffects()
         self.camera.render()
         self.gui.render(self.editor.input)
 
