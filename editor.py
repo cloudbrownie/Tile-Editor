@@ -1,8 +1,4 @@
 import pygame
-import json
-import os
-import cProfile
-import pstats
 from scripts.chunks import Chonky
 from scripts.clock import Clock
 from scripts.sheets import Sheets
@@ -33,15 +29,5 @@ class Editor:
     def stop(self):
         self.running = False
 
-def main():
+if __name__ == '__main__':
     Editor().run()
-
-main()
-
-# profiling
-#with cProfile.Profile() as pr:
-#    main()
-
-#stats = pstats.Stats(pr)
-#stats.sort_stats(pstats.SortKey.TIME)
-#stats.print_stats()
