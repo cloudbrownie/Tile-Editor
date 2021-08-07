@@ -22,6 +22,10 @@ class Sheets:
         self.XSPACE = 5
         self.NAMESCROLLBOUND = 0
 
+        # create an input folder if it doesn't exist
+        if not os.path.isdir('input/'):
+            os.mkdir('input/')
+
     def loadSheets(self):
 
         # load from all sheets in the input folder (any .pngs)
