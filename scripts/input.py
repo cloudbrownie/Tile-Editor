@@ -47,6 +47,7 @@ class Input:
         }
         self.MINIMUMSBOXAREA = self.editor.chunks.TILESIZE ** 2
         self.SELECTIONBOXCOLOR = 255, 255, 255
+        self.REDSELECTIONBOXCOLOR = 200, 100, 100
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
@@ -159,6 +160,10 @@ class Input:
                 elif event.button == 2:
                     if self.mouseposition[0] > self.editor.window.toolbar.width:
                         self.editor.window.camera.setScrollBoolean(True)
+
+                elif event.button == 3:
+                    if self.currentToolType == 'select':
+                        self.resetSBox()
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
