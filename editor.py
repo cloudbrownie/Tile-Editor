@@ -1,7 +1,6 @@
 import pygame
 from scripts.chunks import Chonky
 from scripts.clock import Clock
-from scripts.sheets import Sheets
 from scripts.window import Window
 from scripts.input import Input
 
