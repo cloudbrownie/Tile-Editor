@@ -17,7 +17,9 @@ UNDO = pygame.K_z
 TYPESWAP = pygame.K_w
 AUTOTILE = pygame.K_a
 FLOOD = pygame.K_f
-BULKREMOVE = pygame.K_r
+BULKREMOVE = pygame.K_x
+CTRL = pygame.K_LCTRL
+
 
 class Input:
     '''
@@ -38,6 +40,7 @@ class Input:
 
         self.currentLayer = 0
         self.holding = False
+        self.ctrl = False
 
         self.decoLayers = ['Background', 'Foreground']
         self.decoLayerIndex = 0
@@ -222,10 +225,10 @@ class Input:
                 elif event.key == QUIT:
                     self.editor.stop()
                 # saving
-                elif event.key == SAVE:
+                elif event.key == SAVE and self.ctrl:
                     self.save()
                 # undo 
-                elif event.key == UNDO:
+                elif event.key == UNDO and self.ctrl:
                     sheets = self.editor.window.toolbar.sheets.sheets
                     cnfg = self.editor.window.toolbar.sheets.config
                     self.editor.chunks.undo(sheets, cnfg)
@@ -233,11 +236,11 @@ class Input:
                 elif event.key == TYPESWAP:
                     self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)
                 # auto tiling 
-                elif event.key == AUTOTILE:
+                elif event.key == AUTOTILE and self.ctrl:
                     if self.currentAssetType == 'tiles' and self.currentToolType == 'select' and self.editor.window.toolbar.tileLock:
                         self.editor.chunks.autoTile()
                 # flood filling 
-                elif event.key == FLOOD:
+                elif event.key == FLOOD and self.ctrl:
                     if self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                         layer = self.currentLayer
                         sheet = self.editor.window.toolbar.sheetLock
@@ -257,7 +260,7 @@ class Input:
                             tiley *= self.editor.chunks.TILESIZE
                             self.editor.window.vfx.addPlace((tilex, tiley))
                 # bulk removing
-                elif event.key == BULKREMOVE:
+                elif event.key == BULKREMOVE and self.ctrl:
                     if self.currentAssetType == 'tiles' and self.validSBox:
                         entityType = self.currentAssetType
                         layer = self.currentLayer
@@ -276,6 +279,9 @@ class Input:
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
             self.holding = False
+
+        # check if the ctrl key is being pressed
+        self.ctrl = pygame.key.get_pressed()[CTRL]
 
         # call the editing methods
         if self.holding:
