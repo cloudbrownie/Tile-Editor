@@ -467,6 +467,12 @@ class Chonky:
         return [chunk for chunk in infoPerChunk], decordata
 
     def removeDecor(self, layer, rect, sheets, sheetCnfg, bulk=False):
+        '''
+        used to remove decor from the chunk system  in either the bg or fg in a chunk.
+        location of the decoration is given in the decoration data arg which needs to be formatted as: (sheetname, asset location in sheet, exact position of the topleft point of the decoration).
+        removes all decor pieces that were once part of the whole decor piece originally placed.
+        returns the effected chunks and the decordata
+        '''
         # store all effected chunks for recaching later and the decor data if applicable
         effectedChunks = []
         decordata = None
@@ -651,6 +657,9 @@ class Chonky:
         self.chunks[chunkID]['tiles'][layer] = []
 
     def addSheetRef(self, sheetname):
+        '''
+        creates a new id in the sheet reference dict for a sheet name if the sheet name isn't already in the dict.
+        '''
         # increment the current sheet id and create a reference
         self.sheetID += 1
         self.sheetReferences[self.sheetID] = sheetname
