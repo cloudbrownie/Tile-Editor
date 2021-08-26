@@ -49,7 +49,7 @@ class Chonky:
             }
         return newChunkData
 
-    def getRenderList(self, rect, scroll):
+    def getRenderList(self, rect):
         '''
         used by the rendering class to render the bg, tiles, and foreground.
         rendering class handles this stuff rather than the chunk class since the player images in-game will be between the bg and the tile layer

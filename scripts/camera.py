@@ -26,7 +26,7 @@ class Camera:
     def zoom(self):
         return self.zoomValues[self.zIndex]
 
-    def moveScroll(self, values):
+    def moveScroll(self):
         pass
 
     def applyScroll(self, values):
@@ -38,18 +38,17 @@ class Camera:
         self.zIndex = max(0, self.zIndex)
         self.zIndex = min(self.zIndex, len(self.zoomValues) - 1)
         if currentIndex != self.zIndex:
-            self.adjustCamera(value)
+            self.adjustCamera()
 
-    def adjustCamera(self, value):
-        center = self.cameraRect.center
+    def adjustCamera(self):
+        width, height = self.cameraRect.size
         self.cameraRect.width = self.originalSize[0] * self.zoom
         self.cameraRect.height = self.originalSize[1] * self.zoom
-        self.cameraRect.center = center
-        if value > 0:
-            self.scroll = [self.scroll[0] * 2, self.scroll[1] * 2]
-        elif value < 0:
-            self.scroll = [self.scroll[0] * .5, self.scroll[1] * .5]
         self.camera = pygame.Surface(self.cameraRect.size)
+        self.cameraRect.x -= (self.cameraRect.width - width) / 2
+        self.cameraRect.y -= (self.cameraRect.height - height) / 2
+        self.scroll = list(self.cameraRect.topleft)
+        pygame.mouse.get_rel()
 
     def render(self):
         self.camera.fill(self.COLOR)
@@ -61,7 +60,7 @@ class Camera:
             self.camera.blit(surface, (blitLocation[0] - self.scroll[0], blitLocation[1] - self.scroll[1]), special_flags=pygame.BLEND_RGBA_ADD)
 
         # render the chunks
-        chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect, self.scroll)
+        chunkInfo = self.window.editor.chunks.getRenderList(self.cameraRect)
         for chunk in chunkInfo:
             chunkx, chunky = chunk['chunkpos']
             for sub in chunk['bg subs']:
