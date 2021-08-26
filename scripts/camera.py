@@ -91,7 +91,7 @@ class Camera:
 
         # draw the input class's selection box
         if self.window.editor.input.validSBox:
-            color = self.window.editor.input.SELECTIONBOXCOLOR
+            color = self.window.editor.input.sboxColor
             topleft = list(self.window.editor.input.selectionBox['1'])
             bottomright = list(self.window.editor.input.selectionBox['2'])
             topright = [bottomright[0], topleft[1]]
@@ -103,7 +103,7 @@ class Camera:
             pygame.draw.line(self.camera, color, br, bl, self.scale)
             pygame.draw.line(self.camera, color, bl, tl, self.scale)
         elif self.window.editor.input.selectionBox['1'] and not self.window.editor.input.selectionBox['2']:
-            color = self.window.editor.input.REDSELECTIONBOXCOLOR
+            color = self.window.editor.input.sBoxRed
             topleft = list(self.window.editor.input.selectionBox['1'])
             bottomright = self.window.editor.input.exactPosition
             topright = [bottomright[0], topleft[1]]

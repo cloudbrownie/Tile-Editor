@@ -1,8 +1,9 @@
 import pygame
-import sys
+import time
 import shutil
 import os
 import json
+import math
 
 # store keybinds
 DRAW = pygame.K_1
@@ -46,8 +47,10 @@ class Input:
             '2':None
         }
         self.MINIMUMSBOXAREA = self.editor.chunks.TILESIZE ** 2
-        self.SELECTIONBOXCOLOR = 255, 255, 255
-        self.REDSELECTIONBOXCOLOR = 200, 100, 100
+        self.NORMSBOX = 255, 255, 255
+        self.GREENSBOX = 50, 255, 50
+        self.validStart = 0
+        self.maxTime = .5
 
         self.cursor = pygame.Rect(0, 0, 5, 5)
 
@@ -115,13 +118,34 @@ class Input:
         return 0
 
     @property
+    def sboxPercent(self):
+        return (min((time.time() - self.validStart), self.maxTime)) / self.maxTime
+
+    @property
+    def sboxColor(self):
+        r = self.GREENSBOX[0] + self.sboxPercent * (self.NORMSBOX[0] - self.GREENSBOX[0])
+        g = self.GREENSBOX[1] + self.sboxPercent * (self.NORMSBOX[1] - self.GREENSBOX[1])
+        b = self.GREENSBOX[2] + self.sboxPercent * (self.NORMSBOX[2] - self.GREENSBOX[2])
+        return r, g, b
+
+    @property
+    def sBoxRed(self):
+        r = 55 * math.sin(time.time() * 10) + 200
+        return r, 100, 100
+
+    @property
     def selectionBoxRect(self):
         self.normalizeSBox()
         return pygame.Rect(self.selectionBox['1'], (self.selectionBox['2'][0] - self.selectionBox['1'][0], self.selectionBox['2'][1] - self.selectionBox['1'][1]))
 
     @property
     def validSBox(self):
-        return self.getSBoxArea() > self.MINIMUMSBOXAREA
+        if self.getSBoxArea() > self.MINIMUMSBOXAREA:
+            if self.validStart <= 0:
+                self.validStart = time.time()
+            return True
+        self.validStart = 0
+        return False
 
     def update(self):
         # get the mouse position
@@ -210,11 +234,11 @@ class Input:
                     self.assetIndex = (self.assetIndex + 1) % len(self.assetTypes)
                 # auto tiling 
                 elif event.key == AUTOTILE:
-                    if self.currentAssetType == 'tiles' and self.currentToolType == 'select':
+                    if self.currentAssetType == 'tiles' and self.currentToolType == 'select' and self.editor.window.toolbar.tileLock:
                         self.editor.chunks.autoTile()
                 # flood filling 
                 elif event.key == FLOOD:
-                    if self.currentAssetType == 'tiles':
+                    if self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                         layer = self.currentLayer
                         sheet = self.editor.window.toolbar.sheetLock
                         sheetLoc = self.editor.window.toolbar.tileLockLocation
