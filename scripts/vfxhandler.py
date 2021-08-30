@@ -1,4 +1,5 @@
 import pygame
+import random
 
 from .vfx import Place, Remove, ChunkCreation, ChunkRemoval
 
@@ -30,8 +31,14 @@ class VFXHandler:
     def addPlace(self, location):
         self.effects.append(Place(self.editor, location))
 
-    def addRemove(self, location):
-        pass
+    def addRemove(self, location, asset):
+        width, height = asset.get_size()
+
+        for i in range(random.randint(1, 5)):
+            pxLocation = random.randint(0, width - 1), random.randint(0, height - 1)
+            effectLocation = [location[0] + pxLocation[0], location[1] + pxLocation[1]]
+            color = asset.get_at(pxLocation)
+            self.effects.append(Remove(self.editor, effectLocation, color))
 
     def addChunkAdd(self, chunk):
         self.effects.append(ChunkCreation(self.editor, chunk))

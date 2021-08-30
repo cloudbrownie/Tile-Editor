@@ -126,6 +126,14 @@ class Chonky:
             return self.stringifyID(arg[0], arg[1])
         return arg
 
+    def validCoords(self, arg):
+        '''
+        used to convert a string chunk format into the tuple format if not already the tuple format. returns formatted tuple chunk coords.
+        '''
+        if isinstance(arg, str):
+            return self.deStringifyID(arg)
+        return arg
+
     def addChunk(self, chunkID):
         '''
         adds a new chunk to the class's chunk variable with the default information. input can be either chunkx and chunky or pre formatted chunk id. returns none
@@ -809,6 +817,9 @@ class Chonky:
             # store all chunks that have been effected for surface recaching
             effectedChunks = []
 
+            # store each tile data from the remove tile to return
+            tiledata = []
+
             # keep track of all unrelative tile locations to remove 
             removeTiles = []
             # iterate through all chunks in bounds
@@ -824,15 +835,10 @@ class Chonky:
                             continue    
                         removeTiles.append(unrelativeTileLocation)
 
-
-            # store removed tiles
-            removedTiles = []
-
             # remove the tiles outside of iteration because removing during iteration causes issues in this case
             for tileLocation in removeTiles:
                 chunk, tile = self.removeTile(layer, tileLocation, sheets, sheetCnfg, bulk=True)
-                if tile != None:
-                    removedTiles.append(tile)
+                tiledata.append((chunk, tile))
                 if chunk not in effectedChunks:
                     effectedChunks.append(chunk)
 
@@ -846,7 +852,7 @@ class Chonky:
                 else:
                     effectedChunks.pop(i)
 
-            return effectedChunks, removedTiles
+            return tiledata
 
         elif entityType == 'decorations':
             # store all clip rects 
@@ -860,14 +866,15 @@ class Chonky:
 
                 clipRects.append(clipRect)
 
-            # store all effected chunks and removed decor
+            # store all effected chunks and decor data
             effectedChunks = []
-            removedDecor = []
+
+            decordata = []
 
             # iterate through all clip rects and call the remove decor method using each clip rect
             for clipRect in clipRects:
                 chunks, decor = self.removeDecor(layer, clipRect, sheets, sheetCnfg, bulk=True)
-                removedDecor.append(decor)
+                decordata.append((chunks, decor))
                 if chunk not in effectedChunks:
                     effectedChunks.extend(chunks)
 
@@ -881,4 +888,4 @@ class Chonky:
                 else:
                     effectedChunks.pop(i)
 
-            return effectedChunks, removedDecor
+            return decordata

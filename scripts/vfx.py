@@ -1,5 +1,6 @@
 import pygame
 import time
+import random
 
 class Effect:
     '''
@@ -56,11 +57,26 @@ class Remove(Effect):
     '''
     effect used for tile and decor removals.
     '''
-    def __init__(self, editor):
+    def __init__(self, editor, location, color):
         super().__init__(editor)
+        self.decayRate = .2
+        self.radius = random.randint(2, 5)
+        self.location = location
+        self.color = color
+        self.vels = random.uniform(-1, 1), random.uniform(-1, 1)
 
     def update(self):
-        pass
+        surface = pygame.Surface((self.radius, self.radius))
+        surface.fill(self.color)
+        
+        self.location[0] += self.vels[0] * self.clock.dt
+        self.location[1] += self.vels[1] * self.clock.dt
+
+        self.radius -= self.decayRate * self.clock.dt
+        if self.radius <= 0:
+            self.dead = True
+
+        return surface, self.location
 
 class ChunkCreation(Effect):
     '''

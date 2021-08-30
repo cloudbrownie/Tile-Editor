@@ -267,14 +267,23 @@ class Input:
                         sheets = self.editor.window.toolbar.sheets.sheets
                         cnfg = self.editor.window.toolbar.sheets.config
                         rect = self.selectionBoxRect
-                        self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                        tiledata = self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                        if tiledata and tiledata != []:
+                            for (chunk, tile) in tiledata:
+                                sheet, (sx, sy), (tilex, tiley) = tile
+                                chunkx, chunky = self.editor.chunks.deStringifyID(chunk)
+                                tilex = tilex * self.editor.chunks.TILESIZE + chunkx * self.editor.chunks.CHUNKPX
+                                tiley = tiley * self.editor.chunks.TILESIZE + chunky * self.editor.chunks.CHUNKPX
+                                sheetname = self.editor.chunks.sheetReferences[sheet]
+                                asset = self.editor.window.toolbar.sheets.sheets[sheetname][0][sx][sy]
+                                self.editor.window.vfx.addRemove((tilex, tiley), asset)
                     elif self.currentAssetType == 'decorations' and self.validSBox:
                         entityType = self.currentAssetType
                         layer = self.currentDecorationLayer
                         sheets = self.editor.window.toolbar.sheets.sheets
                         cnfg = self.editor.window.toolbar.sheets.config
                         rect = self.selectionBoxRect
-                        self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                        chunks, tiledata = self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
@@ -304,7 +313,15 @@ class Input:
                 loc = self.penPosition
                 sheets = self.editor.window.toolbar.sheets.sheets
                 cnfg = self.editor.window.toolbar.sheets.config
-                self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
+                chunk, tiledata = self.editor.chunks.removeTile(self.currentLayer, loc, sheets, cnfg)
+                if tiledata:
+                    sheet, (sx, sy), (tilex, tiley) = tiledata
+                    chunkx, chunky = self.editor.chunks.deStringifyID(chunk)
+                    tilex = tilex * self.editor.chunks.TILESIZE + chunkx * self.editor.chunks.CHUNKPX
+                    tiley = tiley * self.editor.chunks.TILESIZE + chunky * self.editor.chunks.CHUNKPX
+                    sheetname = self.editor.chunks.sheetReferences[sheet]
+                    asset = self.editor.window.toolbar.sheets.sheets[sheetname][0][sx][sy]
+                    self.editor.window.vfx.addRemove((tilex, tiley), asset)
             # adding decor
             elif self.currentToolType == 'draw' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
                 layer = self.currentDecorationLayer
