@@ -59,7 +59,7 @@ class Remove(Effect):
     '''
     def __init__(self, editor, location, color):
         super().__init__(editor)
-        self.decayRate = .2
+        self.decayRate = random.uniform(.05, .15)
         self.radius = random.randint(2, 5)
         self.location = location
         self.color = color
