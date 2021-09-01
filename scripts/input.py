@@ -258,7 +258,7 @@ class Input:
                             tilex, tiley = tileLoc
                             tilex *= self.editor.chunks.TILESIZE
                             tiley *= self.editor.chunks.TILESIZE
-                            self.editor.window.vfx.addPlace((tilex, tiley))
+                            self.editor.window.vfx.addTilePlace((tilex, tiley))
                 # bulk removing
                 elif event.key == BULKREMOVE and self.ctrl:
                     if self.currentAssetType == 'tiles' and self.validSBox:
@@ -283,7 +283,16 @@ class Input:
                         sheets = self.editor.window.toolbar.sheets.sheets
                         cnfg = self.editor.window.toolbar.sheets.config
                         rect = self.selectionBoxRect
-                        chunks, tiledata = self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                        decordata = self.editor.chunks.bulkRemove(entityType, layer, sheets, cnfg, rect)
+                        if decordata and decordata != []:
+                            for (chunk, decor) in decordata:
+                                if len(list(decor)) >= 4:
+                                    decor = list(decor)
+                                    decor.pop(-1)
+                                sheet, (sx, sy), (decorx, decory) = decor
+                                sheetname = self.editor.chunks.sheetReferences[sheet]
+                                asset = self.editor.window.toolbar.sheets.sheets[sheetname][0][sx][sy]
+                                self.editor.window.vfx.addRemove((decorx, decory), asset)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
@@ -307,7 +316,7 @@ class Input:
                     tilex, tiley = tileLoc
                     tilex = tilex * self.editor.chunks.TILESIZE + chunkx * self.editor.chunks.CHUNKPX
                     tiley = tiley * self.editor.chunks.TILESIZE + chunky * self.editor.chunks.CHUNKPX
-                    self.editor.window.vfx.addPlace((tilex, tiley))
+                    self.editor.window.vfx.addTilePlace((tilex, tiley))
             # removing tiles
             elif self.currentToolType == 'erase' and self.currentAssetType == 'tiles' and self.editor.window.toolbar.tileLock:
                 loc = self.penPosition
@@ -331,7 +340,10 @@ class Input:
                 loc = locx - self.editor.window.toolbar.tileLock.get_width() // 2, locy - self.editor.window.toolbar.tileLock.get_height() // 2
                 sheets = self.editor.window.toolbar.sheets.sheets
                 sheetCnfg = self.editor.window.toolbar.sheets.config
-                self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
+                _, decordata = self.editor.chunks.addDecor(layer, (sheet, sheetLoc, loc), sheets, sheetCnfg)
+                sheetname, (sx, sy), decorlocation = decordata
+                asset = self.editor.window.toolbar.sheets.sheets[sheetname][0][sx][sy]
+                self.editor.window.vfx.addDecorPlace(decorlocation, asset)
             # removing decor
             elif self.currentToolType == 'erase' and self.currentAssetType == 'decorations' and self.editor.window.toolbar.tileLock:
                 layer = self.currentDecorationLayer

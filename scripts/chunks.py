@@ -526,6 +526,8 @@ class Chonky:
                         originalTopLeft = chunkx * self.CHUNKPX + decor[2][0] - decor[3][0], chunky * self.CHUNKPX + decor[2][1] - decor[3][1]
                         originalChunk = self.getChunkID(originalTopLeft, tile=False)
                         spillOverChunks = self.findSpillChunks(self.deStringifyID(originalChunk), (width, height), originalTopLeft)
+
+                        decordata = sheetID, assetLocation, originalTopLeft
                         # since the spill over chunks contains the original, remove the original from the spill overs
                         spillOverChunks = [chunk for chunk in spillOverChunks if chunk != (chunkx, chunky)]
                         # find each fragment in the spill over chunks
@@ -874,7 +876,8 @@ class Chonky:
             # iterate through all clip rects and call the remove decor method using each clip rect
             for clipRect in clipRects:
                 chunks, decor = self.removeDecor(layer, clipRect, sheets, sheetCnfg, bulk=True)
-                decordata.append((chunks, decor))
+                if decor:
+                    decordata.append((chunks, decor))
                 if chunk not in effectedChunks:
                     effectedChunks.extend(chunks)
 

@@ -1,7 +1,7 @@
 import pygame
 import random
 
-from .vfx import Place, Remove, ChunkCreation, ChunkRemoval
+from .vfx import TilePlace, DecorPlace, Remove, ChunkCreation, ChunkRemoval
 
 class VFXHandler:
     def __init__(self, window):
@@ -28,8 +28,11 @@ class VFXHandler:
 
         self.effectData = effectData
 
-    def addPlace(self, location):
-        self.effects.append(Place(self.editor, location))
+    def addTilePlace(self, location):
+        self.effects.append(TilePlace(self.editor, location))
+
+    def addDecorPlace(self, location, asset):
+        self.effects.append(DecorPlace(self.editor, location, asset))
 
     def addRemove(self, location, asset):
         width, height = asset.get_size()
