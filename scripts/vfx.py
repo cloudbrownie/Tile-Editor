@@ -65,26 +65,21 @@ class DecorPlace(Effect):
         self.scale = 1
         self.mxscale = 1.75
         self.grwRate = .075
-        self.innerscale = .75
 
     def update(self):
-        outSize = self.w * self.scale, self.h * self.scale
-        surface = pygame.Surface(outSize)
+        size = self.w * self.scale, self.h * self.scale
+        surface = pygame.Surface(size)
         surface.set_colorkey((0, 0, 0))
+
         whitemask = self.mask.to_surface(unsetcolor=(0, 0, 0, 0))
-        intsize = int(outSize[0]), int(outSize[1])
+        intsize = int(size[0]), int(size[1])
         surface.blit(pygame.transform.scale(whitemask, intsize), (0, 0))
 
-        inSize = int(self.w * self.innerscale), int(self.h * self.innerscale)
-        alphamask = self.mask.to_surface(setcolor=(0, 0, 0))
-        surface.blit(pygame.transform.scale(alphamask, inSize), ((outSize[0] - inSize[0]) / 2, (outSize[0] - inSize[0]) / 2))
-
-        blitx = self.location[0] - (outSize[0] - self.w) / 2
-        blity = self.location[1] - (outSize[1] - self.h) / 2
+        blitx = self.location[0] - (size[0] - self.w) / 2
+        blity = self.location[1] - (size[1] - self.h) / 2
 
         self.scale = min(self.scale + self.grwRate * self.clock.dt, self.mxscale)
-        self.innerscale = min(self.innerscale + self.grwRate * self.clock.dt, self.scale)
-        if self.innerscale == self.scale:
+        if self.scale >= self.mxscale:
             self.dead = True
 
         return surface, (blitx, blity)
