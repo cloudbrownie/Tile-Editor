@@ -234,10 +234,15 @@ class Chonky:
         '''
         returns a single tile at a given location and layer. loc arg is not chunk relative
         '''
+        chunkID = self.getChunkID(loc)
+
         # used to get a single tile in a given layer
-        for tile in self.chunks[self.getChunkID(loc)]['tiles'][layer]:
-            if tile[2] == self.getTileLocation(loc):
-                return tile
+        if chunkID in self.chunks and layer in self.chunks[chunkID]:
+            for tile in self.chunks[self.getChunkID(loc)]['tiles'][layer]:
+                if tile[2] == self.getTileLocation(loc):
+                    return tile
+
+        return None
 
     def convertExactToTilePosition(self, loc):
         '''
@@ -709,6 +714,37 @@ class Chonky:
             # since the chunks loaded don't have cached surface info from being pickled when saved, must cache each chunk's surface data
             for chunk in self.chunks:
                 self.cacheChunkSurf(chunk, sheets, sheetCnfg)
+
+    def checkNeighbors(self, chunk, tileLoc, layer):
+        '''
+        tileloc parameter is not global
+        used to return a string of 4 bits representing if the corresponding neighbor exists.
+        order of the bits: top, bottom, left, right
+        0 = no neighbor
+        1 = neighbor
+        '''
+
+        # store the bits in a string that we later append the bits to
+        neighbors = ''
+
+        # unpack the chunkx and chunky for finding the tile's global pos
+        chunkx, chunky = self.validCoords(chunk)
+
+        # find the tile's global position
+        globalpos = tileLoc[0] + chunkx * self.CHUNKSIZE, tileLoc[1] + chunky * self.CHUNKSIZE
+
+        # iterate through possible neighbors and check if they exist in their relative chunks
+        for dirx, diry in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            # find neighbor global position
+            neighborpos = globalpos[0] + dirx, globalpos[1] + diry
+            
+            # find if the neighbor exists
+            if self.getTileInLayer(neighborpos, layer):
+                neighbors += '1'
+            else:
+                neighbors += '0'
+
+        return neighbors
 
     def autoTile(self, layer, loc, sheets, sheetCnfg, rect=None):
         '''
