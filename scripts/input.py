@@ -18,7 +18,8 @@ TYPESWAP = pygame.K_w
 AUTOTILE = pygame.K_a
 FLOOD = pygame.K_f
 BULKREMOVE = pygame.K_x
-CTRL = pygame.K_LCTRL
+LCTRL = pygame.K_LCTRL
+RCTRL = pygame.K_RCTRL
 SCROLLUP = pygame.K_UP
 SCROLLDOWN = pygame.K_DOWN
 SCROLLRIGHT = pygame.K_RIGHT
@@ -312,7 +313,7 @@ class Input:
         allkeys = pygame.key.get_pressed()
 
         # check if the ctrl key is being pressed
-        self.ctrl = allkeys[CTRL]
+        self.ctrl = allkeys[LCTRL] or allkeys[RCTRL]
 
         if not self.ctrl:
             scrollx, scrolly = 0, 0
