@@ -25,6 +25,11 @@ class GUI:
         # add on the pen position info
         texts.append(f'Pen Position: {input.penPosition}')
 
+        # add scroll info
+        texts.append(f'Scroll: {self.window.camera.scroll}')
+        texts.append(f'Scroll Target: {self.window.camera.scrollTarget}')
+        texts.append(f'Zoom: {self.window.camera.zoom:.2f}')
+
         texts.append(f'Chunk: {input.currentChunk}')
 
         # add on the current tool text

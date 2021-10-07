@@ -19,6 +19,12 @@ AUTOTILE = pygame.K_a
 FLOOD = pygame.K_f
 BULKREMOVE = pygame.K_x
 CTRL = pygame.K_LCTRL
+SCROLLUP = pygame.K_UP
+SCROLLDOWN = pygame.K_DOWN
+SCROLLRIGHT = pygame.K_RIGHT
+SCROLLLEFT = pygame.K_LEFT
+DECZOOM = pygame.K_DOWN
+INCZOOM = pygame.K_UP
 
 
 class Input:
@@ -293,13 +299,32 @@ class Input:
                                 sheetname = self.editor.chunks.sheetReferences[sheet]
                                 asset = self.editor.window.toolbar.sheets.sheets[sheetname][0][sx][sy]
                                 self.editor.window.vfx.addRemove((decorx, decory), asset)
+                # keyboard zoom inputs
+                elif event.key == DECZOOM and self.ctrl:
+                    self.editor.window.camera.adjustZoom(1)
+                elif event.key == INCZOOM and self.ctrl:
+                    self.editor.window.camera.adjustZoom(-1)
 
         # since holding is only used for the editing tools, make holding false when in the toolbar or if the mouse goes out of the window
         if self.mouseposition[0] < self.editor.window.toolbar.width or not pygame.mouse.get_focused():
             self.holding = False
 
+        allkeys = pygame.key.get_pressed()
+
         # check if the ctrl key is being pressed
-        self.ctrl = pygame.key.get_pressed()[CTRL]
+        self.ctrl = allkeys[CTRL]
+
+        if not self.ctrl:
+            scrollx, scrolly = 0, 0
+            if allkeys[SCROLLUP]:
+                scrolly -= 1
+            if allkeys[SCROLLDOWN]:
+                scrolly += 1
+            if allkeys[SCROLLRIGHT]:
+                scrollx += 1
+            if allkeys[SCROLLLEFT]:
+                scrollx -= 1
+            self.editor.window.camera.arrowScroll(scrollx, scrolly)
 
         # call the editing methods
         if self.holding:
@@ -380,6 +405,7 @@ class Input:
 
         # update the camera scroll in here since it only updates based on inputs anyways
         self.editor.window.camera.updateScroll()
+        self.editor.window.camera.updateZoom()
 
     """
     create a new folder with all of the current chunk data in a .json file, copies of each of the spritesheets, and a copy of the config for each of the spritesheets
