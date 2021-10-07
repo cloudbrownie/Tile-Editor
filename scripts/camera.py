@@ -24,7 +24,7 @@ class Camera:
         self.scroll = [-self.camera.get_width() // 2, -self.camera.get_height() // 2]
         self.scrollTarget = [self.scroll[0], self.scroll[1]]
         self.scrollSpeed = 5
-        self.targetSpeed = 25
+        self.targetSpeed = 3
         self.cameraRect = pygame.Rect(self.scroll, self.originalSize)
         self.scrolling = False
         self.zoomValues = [.25, .5, 1, 2, 4, 8]
@@ -143,8 +143,8 @@ class Camera:
             dx, dy = pygame.mouse.get_rel()
             dx *= self.ratio[0]
             dy *= self.ratio[1]
-            self.scroll[0] -= dx * self.zoom
-            self.scroll[1] -= dy * self.zoom
+            self.scrollTarget[0] -= dx * self.zoom
+            self.scrollTarget[1] -= dy * self.zoom
             self.cameraRect.topleft = self.scroll
         if self.scroll != self.scrollTarget:
             dx = ((self.scrollTarget[0] - self.scroll[0]) / self.targetSpeed) * self.clock.dt
@@ -152,3 +152,7 @@ class Camera:
             self.scroll[0] += absround(dx)
             self.scroll[1] += absround(dy)
             self.cameraRect.topleft = self.scroll
+            if abs(self.scroll[0] - self.scrollTarget[0]) <= .5:
+                self.scroll[0] = self.scrollTarget[0]
+            if abs(self.scroll[1] - self.scrollTarget[1]) <= .5:
+                self.scroll[1] = self.scrollTarget[1]
