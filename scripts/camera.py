@@ -33,33 +33,6 @@ class Camera:
         self.zoomTarget = self.zoomValues[self.zIndex]
         self.zoomSpeed = 5
         self.ASSETHOVERALPHA = 120
- 
-    def updateZoom(self):
-        if self.zoom != self.zoomTarget:
-            dz = ((self.zoomTarget - self.zoom) / self.zoomSpeed) * self.clock.dt
-            self.zoom += dz
-            self.adjustCamera()
-            if abs(self.zoom - self.zoomTarget) <= .01:
-                self.zoom = self.zoomTarget
-
-    def applyScroll(self, values):
-        return [(value[0] - self.scroll[0], value[1] - self.scroll[1]) for value in values]
-
-    def adjustZoom(self, value):
-        self.zIndex += value
-        self.zIndex = max(0, self.zIndex)
-        self.zIndex = min(self.zIndex, len(self.zoomValues) - 1)
-        self.zoomTarget = self.zoomValues[self.zIndex]
-
-    def adjustCamera(self):
-        center = self.cameraRect.center
-        self.cameraRect.width = self.originalSize[0] * self.zoom
-        self.cameraRect.height = self.originalSize[1] * self.zoom
-        self.camera = pygame.Surface(self.cameraRect.size)
-        self.cameraRect.center = center
-        self.scroll = list(self.cameraRect.topleft)
-        self.scrollTarget = list(self.cameraRect.topleft)
-        pygame.mouse.get_rel()
 
     def render(self):
         self.camera.fill(self.COLOR)
@@ -138,6 +111,9 @@ class Camera:
         self.scrollTarget[0] += x * self.scrollSpeed * self.zoom
         self.scrollTarget[1] += y * self.scrollSpeed * self.zoom
 
+    def applyScroll(self, values):
+        return [(value[0] - self.scroll[0], value[1] - self.scroll[1]) for value in values]
+
     def updateScroll(self):
         if self.scrolling:
             dx, dy = pygame.mouse.get_rel()
@@ -156,3 +132,31 @@ class Camera:
                 self.scroll[0] = self.scrollTarget[0]
             if abs(self.scroll[1] - self.scrollTarget[1]) <= .5:
                 self.scroll[1] = self.scrollTarget[1]
+
+    def updateZoom(self):
+        if self.zoom != self.zoomTarget:
+            dz = ((self.zoomTarget - self.zoom) / self.zoomSpeed) * self.clock.dt
+            self.zoom += dz
+            self.adjustCamera()
+            if abs(self.zoom - self.zoomTarget) <= .01:
+                self.zoom = self.zoomTarget
+
+    def adjustZoom(self, value):
+        self.zIndex += value
+        self.zIndex = max(0, self.zIndex)
+        self.zIndex = min(self.zIndex, len(self.zoomValues) - 1)
+        self.zoomTarget = self.zoomValues[self.zIndex]
+
+    def adjustCamera(self):
+        center = self.cameraRect.center
+        self.cameraRect.width = self.originalSize[0] * self.zoom
+        self.cameraRect.height = self.originalSize[1] * self.zoom
+        self.camera = pygame.Surface(self.cameraRect.size)
+        self.cameraRect.center = center
+        self.scroll = list(self.cameraRect.topleft)
+        self.scrollTarget = list(self.cameraRect.topleft)
+        pygame.mouse.get_rel()
+
+    def grid(self):
+        '''
+        '''
