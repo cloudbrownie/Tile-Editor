@@ -12,6 +12,7 @@ class VFXHandler:
         self.surfCache = []
         self.effects = []
         self.effectData = []
+        self.maxEffects = 100
 
     def handleEffects(self):
         '''
@@ -25,6 +26,9 @@ class VFXHandler:
             else:
                 data = effect.update()
                 effectData.append(data)
+
+        while len(self.effects) > self.maxEffects:
+            self.effects.pop(0)
 
         self.effectData = effectData
 
